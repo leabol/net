@@ -1,0 +1,14 @@
+# Build artifacts
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/Makefile
+/cmake_install.cmake
+/install_manifest.txt
+compile_commands.json
+
+# Generated binaries
+/server
+/client
+/src/server
+/clent
