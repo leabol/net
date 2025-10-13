@@ -12,3 +12,6 @@ compile_commands.json
 /client
 /src/server
 /clent
+
+test
+.vscode
