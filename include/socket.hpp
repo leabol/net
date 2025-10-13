@@ -1,10 +1,11 @@
 #pragma once
 
-#include <stdexcept>    
-#include <string>       
-#include <cstring>      
-#include <cerrno>       
-#include <netinet/in.h> 
+#include <stdexcept>
+#include <string>
+#include <cstring>
+#include <cerrno>
+#include <optional>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <sys/socket.h>
 
@@ -93,6 +94,19 @@ public:
             total_send += send_byte;
         }
         return true;
+    }
+
+    std::optional<std::string> RecvString(size_t max_len = 4096) {
+        std::string data(max_len, '\0');
+        ssize_t n = Recv(data.data(), max_len);
+        if (n == 0) {
+            return std::nullopt;
+        }
+        if (n < 0) {
+            throw std::runtime_error("recv failed" + std::string(strerror(errno)));
+        }
+        data.resize(static_cast<size_t>(n));
+        return data;
     }
 
     ssize_t Recv(char *buff, size_t len) {
