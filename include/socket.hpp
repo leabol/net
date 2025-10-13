@@ -54,25 +54,11 @@ protected:
 
 class tcpSocket:public Socket{
 public:
-    void Bind(const socketAddr& addr) {
-        auto [sock_addr, len] = addr.get_addr();
-        if (bind(socket_, sock_addr, len) == -1) {
-            throw std::runtime_error("bind failed"+ std::string(strerror(errno)));
-        }
-    }
+    void Bind(const socketAddr& addr);
 
-    void  Listen(int n = 10) {
-        if (listen(socket_, n) == -1) {
-            throw std::runtime_error("listen failed"+ std::string(strerror(errno)));
-        }
-    }
+    void Listen(int n = 10);
 
-    void Connect(const socketAddr& addr) {
-        auto [sock_addr, len] = addr.get_addr();
-        if (connect(socket_, sock_addr, len) == -1) {
-            throw std::runtime_error("connect is failed"+ std::string(strerror(errno)));
-        }
-    }
+    tcpConnection Connect(const socketAddr& addr);
 
     tcpConnection Accept();
 
@@ -80,6 +66,12 @@ public:
 
 private:
     tcpConnection AcceptImpl(sockaddr* addr, socklen_t* len);
+
+    int release_fd() {
+        int fd = socket_;
+        socket_ = -1;
+        return fd;
+    }
 };
 
 class tcpConnection:public Socket{
@@ -130,4 +122,25 @@ inline tcpConnection tcpSocket::AcceptImpl(sockaddr* addr, socklen_t* len) {
         throw std::runtime_error("accept failed" + std::string(strerror(errno)));
     }
     return tcpConnection(client);
+}
+
+inline void tcpSocket::Bind(const socketAddr& addr) {
+    auto [sock_addr, len] = addr.get_addr();
+    if (bind(socket_, sock_addr, len) == -1) {
+        throw std::runtime_error("bind failed" + std::string(strerror(errno)));
+    }
+}
+
+inline void tcpSocket::Listen(int n) {
+    if (listen(socket_, n) == -1) {
+        throw std::runtime_error("listen failed" + std::string(strerror(errno)));
+    }
+}
+
+inline tcpConnection tcpSocket::Connect(const socketAddr& addr) {
+    auto [sock_addr, len] = addr.get_addr();
+    if (connect(socket_, sock_addr, len) == -1) {
+        throw std::runtime_error("connect failed" + std::string(strerror(errno)));
+    }
+    return tcpConnection(release_fd());
 }
