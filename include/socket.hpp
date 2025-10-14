@@ -11,7 +11,7 @@
 
 #include "address.hpp"
 
-class tcpConnection;
+class TcpConnection;
 
 class Socket{
 public:
@@ -29,7 +29,7 @@ public:
             close(socket_);
     }
 
-    int get_fd() const {
+    int getFd() const {
         return socket_;
     }
 
@@ -53,33 +53,33 @@ protected:
     int socket_{-1};
 };
 
-class tcpSocket:public Socket{
+class TcpSocket:public Socket{
 public:
-    void Bind(const socketAddr& addr);
+    void bindTo(const SocketAddr& addr);
 
-    void Listen(int n = 10);
+    void startListening(int backlog = 10);
 
-    tcpConnection Connect(const socketAddr& addr);
+    TcpConnection connectTo(const SocketAddr& addr);
 
-    tcpConnection Accept();
+    TcpConnection acceptConnection();
 
-    tcpConnection Accept(const socketAddr& addr);
+    TcpConnection acceptConnection(const SocketAddr& addr);
 
 private:
-    tcpConnection AcceptImpl(sockaddr* addr, socklen_t* len);
+    TcpConnection acceptImpl(sockaddr* addr, socklen_t* len);
 
-    int release_fd() {
+    int releaseFd() {
         int fd = socket_;
         socket_ = -1;
         return fd;
     }
 };
 
-class tcpConnection:public Socket{
+class TcpConnection:public Socket{
 public:
-    explicit tcpConnection(int fd) : Socket(fd) {}
+    explicit TcpConnection(int fd) : Socket(fd) {}
     
-    bool Send(const std::string& buff) {
+    bool sendAll(const std::string& buff) {
         size_t total_send = 0;
         const char *data = buff.data();
         size_t buff_size = buff.size();
@@ -96,9 +96,9 @@ public:
         return true;
     }
 
-    std::optional<std::string> RecvString(size_t max_len = 4096) {
+    std::optional<std::string> recvString(size_t max_len = 4096) {
         std::string data(max_len, '\0');
-        ssize_t n = Recv(data.data(), max_len);
+        ssize_t n = recvRaw(data.data(), max_len);
         if (n == 0) {
             return std::nullopt;
         }
@@ -109,11 +109,11 @@ public:
         return data;
     }
 
-    ssize_t Recv(char *buff, size_t len) {
+    ssize_t recvRaw(char *buff, size_t len) {
         ssize_t recv_byte = recv(socket_, buff, len, 0);
         if (recv_byte == -1) {
             if (errno == EINTR) {
-                return Recv(buff, len);
+                return recvRaw(buff, len);
             }
             return -1;
         }
@@ -121,40 +121,40 @@ public:
     }
 };
 
-inline tcpConnection tcpSocket::Accept() {
-    return AcceptImpl(nullptr, nullptr);
+inline TcpConnection TcpSocket::acceptConnection() {
+    return acceptImpl(nullptr, nullptr);
 }
 
-inline tcpConnection tcpSocket::Accept(const socketAddr& addr) {
-    auto [sock_addr, len] = addr.get_addr();
-    return AcceptImpl(sock_addr, &len);
+inline TcpConnection TcpSocket::acceptConnection(const SocketAddr& addr) {
+    auto [sock_addr, len] = addr.endpoint();
+    return acceptImpl(sock_addr, &len);
 }
 
-inline tcpConnection tcpSocket::AcceptImpl(sockaddr* addr, socklen_t* len) {
+inline TcpConnection TcpSocket::acceptImpl(sockaddr* addr, socklen_t* len) {
     int client = accept(socket_, addr, len);
     if (client == -1) {
         throw std::runtime_error("accept failed" + std::string(strerror(errno)));
     }
-    return tcpConnection(client);
+    return TcpConnection(client);
 }
 
-inline void tcpSocket::Bind(const socketAddr& addr) {
-    auto [sock_addr, len] = addr.get_addr();
+inline void TcpSocket::bindTo(const SocketAddr& addr) {
+    auto [sock_addr, len] = addr.endpoint();
     if (bind(socket_, sock_addr, len) == -1) {
         throw std::runtime_error("bind failed" + std::string(strerror(errno)));
     }
 }
 
-inline void tcpSocket::Listen(int n) {
-    if (listen(socket_, n) == -1) {
+inline void TcpSocket::startListening(int backlog) {
+    if (listen(socket_, backlog) == -1) {
         throw std::runtime_error("listen failed" + std::string(strerror(errno)));
     }
 }
 
-inline tcpConnection tcpSocket::Connect(const socketAddr& addr) {
-    auto [sock_addr, len] = addr.get_addr();
+inline TcpConnection TcpSocket::connectTo(const SocketAddr& addr) {
+    auto [sock_addr, len] = addr.endpoint();
     if (connect(socket_, sock_addr, len) == -1) {
         throw std::runtime_error("connect failed" + std::string(strerror(errno)));
     }
-    return tcpConnection(release_fd());
+    return TcpConnection(releaseFd());
 }
