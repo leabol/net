@@ -14,20 +14,26 @@ int main ()
     TcpSocket sockfd;
     TcpConnection connet_fd = sockfd.connectTo(addr);
 
-    auto res = connet_fd.recvString();
-    if (!res.has_value()) {
-        std::cout << "peer closed connection\n";
-    } else {
-        std::cout << *res << std::endl;
-    }
+    // auto res = connet_fd.recvString();
+    // if (!res.has_value()) {
+    //     std::cout << "peer closed connection\n";
+    // } else {
+    //     std::cout << *res << std::endl;
+    // }
 
-    std::string msg = "hi, i am client\n";
-    connet_fd.sendAll(msg);
+    while (true) {
+        std::string msg;
+        std::cin >> msg;
 
-    res = connet_fd.recvString();
-    if (!res.has_value()) {
-        std::cout << "peer closed connection\n";
-    } else {
-        std::cout << *res << std::endl;
+        if (!connet_fd.sendAll(msg)) {
+            std::cout << "connet faile\n";
+        }
+
+        auto res = connet_fd.recvString();
+        if (!res.has_value()) {
+            std::cout << "peer closed connection\n";
+        } else {
+            std::cout << *res << std::endl;
+        }
     }
 }

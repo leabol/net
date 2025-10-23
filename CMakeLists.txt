@@ -10,7 +10,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build the server executable and include shared headers.
-add_executable(server src/server.cpp)
+add_executable(server
+	src/server.cpp
+	src/EventLoop.cpp
+	src/EpollPoller.cpp
+)
 target_include_directories(server PRIVATE include)
 target_compile_options(server PRIVATE -Wall -Wextra -pedantic)
 
