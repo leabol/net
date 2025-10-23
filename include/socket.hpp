@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <fcntl.h>
 
 #include "address.hpp"
 
@@ -33,6 +34,15 @@ public:
         return socket_;
     }
 
+    void setNonBlock() {
+        int flags = fcntl(socket_, F_GETFL, 0);
+        if (flags == -1) {
+            throw std::runtime_error("failed to get file status flags: " + std::string(strerror(errno)));
+        }
+        if (fcntl(socket_, F_SETFL, flags | O_NONBLOCK) == -1) {
+            throw std::runtime_error("failed to set non-blocking mode: " + std::string(strerror(errno)));
+        }
+    }
     Socket(const Socket&) = delete;
     Socket& operator=(const Socket&) = delete;
 
@@ -103,7 +113,7 @@ public:
             return std::nullopt;
         }
         if (n < 0) {
-            throw std::runtime_error("recv failed" + std::string(strerror(errno)));
+            throw std::runtime_error("recv failed: " + std::string(strerror(errno)));
         }
         data.resize(static_cast<size_t>(n));
         return data;
@@ -133,7 +143,7 @@ inline TcpConnection TcpSocket::acceptConnection(const SocketAddr& addr) {
 inline TcpConnection TcpSocket::acceptImpl(sockaddr* addr, socklen_t* len) {
     int client = accept(socket_, addr, len);
     if (client == -1) {
-        throw std::runtime_error("accept failed" + std::string(strerror(errno)));
+        throw std::runtime_error("accept failed: " + std::string(strerror(errno)));
     }
     return TcpConnection(client);
 }
@@ -141,20 +151,20 @@ inline TcpConnection TcpSocket::acceptImpl(sockaddr* addr, socklen_t* len) {
 inline void TcpSocket::bindTo(const SocketAddr& addr) {
     auto [sock_addr, len] = addr.endpoint();
     if (bind(socket_, sock_addr, len) == -1) {
-        throw std::runtime_error("bind failed" + std::string(strerror(errno)));
+        throw std::runtime_error("bind failed: " + std::string(strerror(errno)));
     }
 }
 
 inline void TcpSocket::startListening(int backlog) {
     if (listen(socket_, backlog) == -1) {
-        throw std::runtime_error("listen failed" + std::string(strerror(errno)));
+        throw std::runtime_error("listen failed: " + std::string(strerror(errno)));
     }
 }
 
 inline TcpConnection TcpSocket::connectTo(const SocketAddr& addr) {
     auto [sock_addr, len] = addr.endpoint();
     if (connect(socket_, sock_addr, len) == -1) {
-        throw std::runtime_error("connect failed" + std::string(strerror(errno)));
+        throw std::runtime_error("connect failed: " + std::string(strerror(errno)));
     }
     return TcpConnection(releaseFd());
 }

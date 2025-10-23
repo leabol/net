@@ -1,8 +1,8 @@
+#pragma once
 #include <functional>
 #include <sys/epoll.h>
 
-class Channel
-{
+class Channel {
 public:
     using EventCallback = std::function<void()>;
 
