@@ -21,7 +21,7 @@ public:
 
     TcpStream acceptConnection();
 
-    TcpStream acceptConnection(const SocketAddr& addr);
+    TcpStream acceptConnection(const SocketAddr& addr); // 可以获取客户端的ip端口
 
 private:
     TcpStream acceptImpl(sockaddr* addr, socklen_t* len);

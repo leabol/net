@@ -2,11 +2,12 @@
 
 ## 目录
 1. [项目架构](#项目架构)
-2. [核心概念](#核心概念)
-3. [设计模式](#设计模式)
-4. [常见错误](#常见错误)
-5. [深入理解](#深入理解)
-6. [最佳实践](#最佳实践)
+2. [架构设计](#架构设计)
+3. [核心概念](#核心概念)
+4. [设计模式](#设计模式)
+5. [常见错误](#常见错误)
+6. [深入理解](#深入理解)
+7. [最佳实践](#最佳实践)
 
 ---
 
@@ -49,6 +50,112 @@ Channel (事件处理)
 EventLoop (事件循环)
 └─→ 使用 EpollPoller
 ```
+
+---
+
+## 架构设计
+
+### 为什么这个设计这么复杂？
+
+这是异步事件驱动架构的**必然复杂性**，不是设计问题。
+
+#### 同步 vs 异步
+
+```cpp
+// ❌ 同步代码（简单）
+void processConnection(Socket s) {
+    data = read(s);        // 等待
+    handle(data);
+    close(s);              // 立即关闭
+}  // 生命周期 = 函数执行周期
+
+// ✅ 异步代码（复杂）
+void processAsync(Socket s) {
+    epoll_add(s);          // 注册
+    return;                // 对象什么时候关闭？
+}  // 生命周期 > 函数执行周期
+```
+
+**关键差异：**
+- 同步：对象生命周期 = 函数执行周期
+- 异步：对象生命周期 > 函数执行周期
+
+#### 多所有权问题
+
+你的代码中，一个 `TcpStream` 对象被多个地方持有：
+
+```cpp
+auto conn = std::make_shared<TcpStream>(...);  // 所有者 #1
+channel->setReadCallback([conn]() {            // 所有者 #2（lambda）
+    handleConnection(loop, *conn);
+});
+loop.addChannel(std::move(channel));           // 所有者 #3（EventLoop）
+```
+
+**问题：谁负责关闭 fd？**
+- 如果 conn 超出作用域立即关闭 → lambda 还在用，崩溃
+- 如果 lambda 关闭 → EventLoop 还在用，崩溃
+- 如果 EventLoop 关闭 → 其他地方还在用，崩溃
+
+**解决方案：**
+```cpp
+// 明确所有权转移
+conn.release();           // ← conn 不再拥有 fd
+loop.removeChannel(fd);   // ← EventLoop 放弃 fd
+close(fd);                // ← 我们显式关闭
+```
+
+### 对标行业做法
+
+**Boost.Asio（C++ 异步库）：**
+```cpp
+// 必须使用 shared_ptr
+void async_read(
+    std::shared_ptr<socket_type> sock,  // ← 强制 shared_ptr
+    ...
+)
+```
+
+**libuv（Node.js 底层）：**
+```c
+// 使用引用计数标记
+struct uv_handle_s {
+    unsigned int flags;  // ← 标记关闭状态
+};
+
+void uv_close(uv_handle_t* handle, ...) {
+    handle->flags |= UV_HANDLE_CLOSING;  // ← 标记为关闭中
+}
+```
+
+**Redis：**
+```cpp
+void closeClient(Client* c) {
+    aeDeleteFileEvent(...);  // 移除事件
+    close(c->fd);            // 关闭 fd
+    free(c);                 // 释放内存
+}
+```
+
+**结论：你的做法与行业标准一致。**
+
+### 为什么用 shared_ptr？
+
+三个条件同时存在时必须用 shared_ptr：
+
+1. **异步性**：对象被异步访问（Lambda 稍后被调用）
+2. **共享性**：多个地方持有对象引用
+3. **不可控**：销毁时机由 EventLoop 决定
+
+```
+异步 + 共享 + 不可控
+    ↓
+需要自动生命周期管理
+    ↓
+shared_ptr 是唯一选择
+```
+
+详见：**SMART_POINTER_GUIDE.md**
 
 ---
 

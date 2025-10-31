@@ -148,6 +148,28 @@ total += sent;  // 累计，不能忽略返回值
 A: 可能是
 - fd 设置有误（阻塞/非阻塞）
 - epoll 没有正确注册
+
+**Q: 为什么要用 shared_ptr？**
+A: 异步回调延长对象生命周期
+- Lambda 值捕获时 refcount++
+- 回调执行时对象仍活着
+- 自动销毁，无泄漏
+参考：SMART_POINTER_GUIDE.md
+
+**Q: 关闭连接的标准步骤？**
+A: 三步骤（顺序不能错）
+```cpp
+conn.release();           // 1. 转移 fd 所有权
+loop.removeChannel(fd);   // 2. 从 epoll 移除
+close(fd);                // 3. 关闭 fd
+```
+参考：DESIGN_LESSONS.md
+
+**Q: 这个架构这么复杂，是设计问题吗？**
+A: 不是！这是异步架构的必然
+- 对标 Boost.Asio、libuv 都是这么复杂
+- 需要遵循清单、文档、工具
+参考：DESIGN_LESSONS.md
 - 没有循环等待（ET 模式）
 
 **Q: CPU 占用 100%？**

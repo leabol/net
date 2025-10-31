@@ -72,6 +72,66 @@
 
 ---
 
+### 5. **SMART_POINTER_GUIDE.md** (8.5KB)
+详细解释为什么要用 shared_ptr。
+
+**内容：**
+- ✅ 为什么不能用栈分配
+- ✅ 为什么不能用裸指针
+- ✅ 为什么 shared_ptr 是最佳选择
+- ✅ 三种内存管理方式对比
+- ✅ 与 Error 6（双重关闭）的关系
+- ✅ 性能开销分析
+- ✅ 验证测试代码
+
+**何时使用：**
+- 理解 shared_ptr 的必要性
+- 学习异步编程的内存管理
+- 深入理解 Error 6 的根本原因
+
+---
+
+### 6. **DESIGN_LESSONS.md** (10.2KB) 🆕
+设计权衡与最佳实践指南。
+
+**内容：**
+- ✅ 复杂性来自哪里？
+- ✅ 你的设计是否有问题？（对标行业代码）
+- ✅ 7 个原则避免错误
+- ✅ 完整的检查清单
+- ✅ 错误检测工具（Address Sanitizer、Valgrind）
+- ✅ 3 个设计阶段（简化/功能/生产）
+- ✅ Error 6 根本原因分析
+
+**何时使用：**
+- 理解为什么这个架构是必要的
+- 学习如何避免类似错误
+- 查看行业最佳实践
+- 为代码添加防护措施
+
+---
+
+### 7. **DEVELOPMENT_CHECKLIST.md** (12.3KB) ✅ 实用工具
+开发检查清单，避免常见错误。
+
+**内容：**
+- ✅ 设计阶段检查清单
+- ✅ 实现阶段检查清单
+- ✅ 测试阶段检查清单
+- ✅ 代码审查检查清单
+- ✅ Address Sanitizer 使用方法
+- ✅ Valgrind 使用方法
+- ✅ 快速参考（三步骤关闭、Lambda 捕获规则等）
+- ✅ grep 命令快速检查
+
+**何时使用：**
+- 开发中遵循检查清单
+- 编写完代码后做最终检查
+- 代码审查时使用
+- 集成测试前验证
+
+---
+
 ## 🎯 快速导航
 
 ### 我是新手，想学习网络编程
@@ -175,6 +235,10 @@
 | 2025-10-28 | 补充常见错误 6（shared_ptr 双重关闭） |
 | 2025-10-28 | 创建 DEBUG_REPORT.md（完整调试报告） |
 | 2025-10-28 | 补充常见错误 7（EAGAIN ≠ EOF） |
+| 2025-10-31 | 创建 SMART_POINTER_GUIDE.md（为什么用 shared_ptr） |
+| 2025-10-31 | 创建 DESIGN_LESSONS.md（设计权衡与最佳实践） |
+| 2025-10-31 | 创建 DEVELOPMENT_CHECKLIST.md（完整检查清单） |
+| 2025-10-31 | 更新 LEARNING_NOTES.md 添加"架构设计"章节 |
 
 ---
 
@@ -183,12 +247,50 @@
 **最佳实践：**
 
 1. **第一次学习** → 顺序阅读 LEARNING_NOTES.md
-2. **日常编码** → 在 QUICK_REFERENCE.md 中查找
-3. **遇到问题** → 在 DEBUG_REPORT.md 中查类似案例
-4. **深度理解** → 返回 LEARNING_NOTES.md 的相关章节
+2. **日常编码** → 遵循 DEVELOPMENT_CHECKLIST.md 检查清单
+3. **遇到问题** → 在 QUICK_REFERENCE.md 中快速查找
+4. **想理解设计** → 阅读 DESIGN_LESSONS.md 了解权衡
+5. **深度理解** → 看 DEBUG_REPORT.md 和 SMART_POINTER_GUIDE.md
 
 **建议配置：**
-- 编辑器中打开 QUICK_REFERENCE.md 作为备查
+- 编辑器中打开 DEVELOPMENT_CHECKLIST.md 作为编码检查表
+- 终端边上打开 QUICK_REFERENCE.md 快速查找
+
+---
+
+## 🎓 文档间的关系
+
+```
+LEARNING_NOTES.md (理论基础)
+  ├─ 核心概念 ────→ SMART_POINTER_GUIDE.md (深入讲解)
+  ├─ 设计模式 ────→ DESIGN_LESSONS.md (最佳实践)
+  ├─ 常见错误 ────→ DEBUG_REPORT.md (案例分析)
+  └─ 最佳实践 ────→ DEVELOPMENT_CHECKLIST.md (实施检查)
+
+QUICK_REFERENCE.md (快速查找)
+  └─ 所有文档的快速导航
+
+DEVELOPMENT_CHECKLIST.md (实用工具) ⭐ 推荐日常使用
+  ├─ 编码时遵循
+  ├─ 代码审查时使用
+  └─ 测试时验证
+```
+
+---
+
+## 💡 选择建议
+
+**我应该先读哪个文档？**
+
+| 场景 | 推荐阅读 | 用时 |
+|------|---------|------|
+| 完全新手 | LEARNING_NOTES.md → 核心概念 | 30 分钟 |
+| 想要快速上手 | QUICK_REFERENCE.md | 10 分钟 |
+| 遇到了错误 | QUICK_REFERENCE.md → LEARNING_NOTES.md | 15 分钟 |
+| 想理解架构 | LEARNING_NOTES.md → 架构设计 | 20 分钟 |
+| 想学最佳实践 | DESIGN_LESSONS.md | 25 分钟 |
+| 想深入理解 | 所有文档 | 2 小时 |
+| 日常开发 | DEVELOPMENT_CHECKLIST.md | 随时查 |
 - 遇到问题时快速查找
 - 需要详细说明时打开 LEARNING_NOTES.md
 

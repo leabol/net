@@ -68,8 +68,7 @@ void handleConnection(EventLoop &loop, TcpStream& conn) {
     }
 }
 
-void handleNewConnection(EventLoop &loop, ServerSocket& listenSock) {
-    // Keep accepting connections until no more available (ET mode)
+void handleNewConnection(EventLoop& loop, ServerSocket& listenSock) {
     while (true) {
         try {
             auto conn = std::make_shared<TcpStream>(listenSock.acceptConnection());
@@ -106,14 +105,12 @@ int main() {
     sockfd.bindTo(addr);
     sockfd.startListening();
 
-    int listenfd = sockfd.getFd();
-
     std::cout << "[server] listening on port 8090...\n";
 
     EventLoop loop;
 
     // Create the listen channel
-    auto listenChannel = std::make_shared<Channel>(listenfd);
+    auto listenChannel = std::make_shared<Channel>(sockfd.getFd());
     listenChannel->setInterestedEvents(EPOLLIN);  // LT mode for listen socket
     listenChannel->setReadCallback([&loop, &sockfd]() {
         handleNewConnection(loop, sockfd);
