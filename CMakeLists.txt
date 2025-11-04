@@ -30,12 +30,3 @@ add_executable(client
 )
 target_include_directories(client PRIVATE include)
 target_compile_options(client PRIVATE -Wall -Wextra -pedantic)
-
-# Performance test for the epoll poller.
-add_executable(epoll_perf_test
-	tests/epoll_perf_test.cpp
-	src/EpollPoller.cpp
-	src/SocketBase.cpp
-)
-target_include_directories(epoll_perf_test PRIVATE include)
-target_compile_options(epoll_perf_test PRIVATE -Wall -Wextra -pedantic)

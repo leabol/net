@@ -2,7 +2,6 @@
 #include "../include/EpollPoller.hpp"
 #include "../include/Channel.hpp"
 
-#include <iostream>
 
 EventLoop::EventLoop() : poller_(std::make_unique<EpollPoller>()) {}
 

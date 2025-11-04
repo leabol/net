@@ -7,6 +7,7 @@
 #include <cstring>
 #include <optional>
 #include <string>
+#include <stdexcept>
 
 bool TcpStream::sendAll(const std::string& buff) {
     size_t total_send = 0;

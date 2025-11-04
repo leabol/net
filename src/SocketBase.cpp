@@ -7,7 +7,6 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
-#include <iostream>
 
 SocketBase::SocketBase(bool nonblock) {
     socket_ = socket(AF_INET, SOCK_STREAM, 0);

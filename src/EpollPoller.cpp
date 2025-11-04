@@ -3,7 +3,6 @@
 
 #include <cerrno>
 #include <cstring>
-#include <iostream>
 
 EpollPoller::EpollPoller()
     :epollfd_(epoll_create1(EPOLL_CLOEXEC)),

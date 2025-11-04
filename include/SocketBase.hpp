@@ -6,8 +6,6 @@
 
 #include <cerrno>
 #include <cstring>
-#include <stdexcept>
-#include <string>
 
 /**
  * @brief Base class for socket fd management

@@ -11,7 +11,6 @@
 #include <memory>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <stdexcept>
 #include <unistd.h>
 
 namespace {
