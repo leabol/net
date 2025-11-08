@@ -16,3 +16,4 @@ compile_commands.json
 test
 tests
 .vscode
+.cache

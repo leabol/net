@@ -20,3 +20,13 @@ add_executable(server
 )
 target_include_directories(server PRIVATE include)
 target_compile_options(server PRIVATE -Wall -Wextra -pedantic)
+
+# Build the client executable and include shared headers.
+add_executable(client
+	client.cpp
+	src/SocketBase.cpp
+	src/ClientSocket.cpp
+	src/TcpStream.cpp
+)
+target_include_directories(client PRIVATE include)
+target_compile_options(client PRIVATE -Wall -Wextra -pedantic)
