@@ -22,6 +22,7 @@ public:
         if ((revents_ & EPOLLOUT) && writeCallback_) {
             writeCallback_();
         }
+        //add more error msg
     }
 
     int getFd() const { return fd_; }

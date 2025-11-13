@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <unistd.h>
 
-
 class Channel;
 
 class EpollPoller {
