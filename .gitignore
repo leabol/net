@@ -13,7 +13,5 @@ compile_commands.json
 /src/server
 /clent
 
-test
-tests
 .vscode
 .cache

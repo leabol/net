@@ -9,26 +9,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Build the server executable and include shared headers.
-add_executable(server
-	src/server.cpp
-	src/EventLoop.cpp
-	src/EpollPoller.cpp
+add_executable(socket_server_demo
+	test/socket_server_demo.cpp
+	src/Socket.cpp
 	src/Log.cpp
-	src/SocketBase.cpp
-	src/ServerSocket.cpp
-	src/TcpStream.cpp
 )
-target_include_directories(server PRIVATE include)
-target_compile_options(server PRIVATE -Wall -Wextra -pedantic)
+target_include_directories(socket_server_demo PRIVATE include)
+target_compile_options(socket_server_demo PRIVATE -Wall -Wextra -pedantic)
 
-# Build the client executable and include shared headers.
-add_executable(client
-	client.cpp
+add_executable(socket_client_demo
+	test/socket_client_demo.cpp
+	src/Socket.cpp
 	src/Log.cpp
-	src/SocketBase.cpp
-	src/ClientSocket.cpp
-	src/TcpStream.cpp
 )
-target_include_directories(client PRIVATE include)
-target_compile_options(client PRIVATE -Wall -Wextra -pedantic)
+target_include_directories(socket_client_demo PRIVATE include)
+target_compile_options(socket_client_demo PRIVATE -Wall -Wextra -pedantic)
