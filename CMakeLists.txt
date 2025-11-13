@@ -14,6 +14,7 @@ add_executable(server
 	src/server.cpp
 	src/EventLoop.cpp
 	src/EpollPoller.cpp
+	src/Log.cpp
 	src/SocketBase.cpp
 	src/ServerSocket.cpp
 	src/TcpStream.cpp
@@ -24,6 +25,7 @@ target_compile_options(server PRIVATE -Wall -Wextra -pedantic)
 # Build the client executable and include shared headers.
 add_executable(client
 	client.cpp
+	src/Log.cpp
 	src/SocketBase.cpp
 	src/ClientSocket.cpp
 	src/TcpStream.cpp
