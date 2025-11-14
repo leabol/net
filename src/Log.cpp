@@ -4,8 +4,8 @@
 
 #include <spdlog/async.h>
 #include <spdlog/cfg/env.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include <chrono>
 #include <filesystem>
@@ -14,7 +14,7 @@
 namespace Server {
 
 static std::shared_ptr<spdlog::logger> g_logger;
-static std::once_flag g_once;
+static std::once_flag                  g_once;
 
 static void init_once() {
     // 1) 确保目录存在（静默失败不抛异常）
@@ -23,30 +23,27 @@ static void init_once() {
 
     // 2) Sinks：彩色控制台 + 旋转文件（5MB x 3 份）
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-        "Log/server.log",
-        5 * 1024 * 1024,
-        3,
-        true);
+    auto file_sink    = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+        "Log/server.log", 5 * 1024 * 1024, 3, true);
 
     // 3) 异步日志线程池（8K 队列，1 个后台线程）
-    constexpr std::size_t queue_size = 8192;
+    constexpr std::size_t queue_size     = 8192;
     constexpr std::size_t worker_threads = 1;
     spdlog::init_thread_pool(queue_size, worker_threads);
 
     // 4) 创建异步 logger 并注册
-    g_logger = std::make_shared<spdlog::async_logger>(
-        "Server",
-        spdlog::sinks_init_list{console_sink, file_sink},
-        spdlog::thread_pool(),
-        spdlog::async_overflow_policy::block);
+    g_logger =
+        std::make_shared<spdlog::async_logger>("Server",
+                                               spdlog::sinks_init_list{console_sink, file_sink},
+                                               spdlog::thread_pool(),
+                                               spdlog::async_overflow_policy::block);
 
     spdlog::register_logger(g_logger);
-    spdlog::set_default_logger(g_logger); // 便于直接用 spdlog::info 等
+    spdlog::set_default_logger(g_logger);  // 便于直接用 spdlog::info 等
 
     // 5) 分别设置格式：控制台着色，文件无色；包含源码位置信息
     console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%^%l%$] [tid %t] [%s:%# %!()] %v");
-    file_sink->set_pattern   ("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [tid %t] [%s:%# %!()] %v");
+    file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [tid %t] [%s:%# %!()] %v");
 
     // 6) 默认级别（可被环境变量覆盖）
     g_logger->set_level(spdlog::level::trace);
@@ -79,4 +76,4 @@ void shutdownLogger() {
     spdlog::shutdown();
 }
 
-} // namespace Server
+}  // namespace Server

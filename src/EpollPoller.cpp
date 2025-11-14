@@ -1,25 +1,24 @@
-#include "../include/Channel.hpp"
 #include "../include/EpollPoller.hpp"
 
 #include <cerrno>
 #include <cstring>
 
-EpollPoller::EpollPoller()
-    :epollfd_(epoll_create1(EPOLL_CLOEXEC)),
-    events_(kInitEventListSize) {
-        if (epollfd_ < 0) {
-            //handle error
-        }
-}
+#include "../include/Channel.hpp"
 
+using namespace Server;
+
+EpollPoller::EpollPoller() : epollfd_(epoll_create1(EPOLL_CLOEXEC)), events_(kInitEventListSize) {
+    if (epollfd_ < 0) {
+        // handle error
+    }
+}
 
 EpollPoller::~EpollPoller() {
     close(epollfd_);
 }
 
 std::vector<Channel*> EpollPoller::poll(int timeout) {
-    int numEvents = epoll_wait(epollfd_, events_.data(),
-                                static_cast<int>(events_.size()), timeout);
+    int numEvents = epoll_wait(epollfd_, events_.data(), static_cast<int>(events_.size()), timeout);
 
     if (numEvents < 0) {
         if (errno == EINTR) {
@@ -40,21 +39,21 @@ std::vector<Channel*> EpollPoller::poll(int timeout) {
     return activeChannel;
 }
 
-void EpollPoller::addChannel(Channel *channel) {
+void EpollPoller::addChannel(Channel* channel) {
     epoll_event event;
     event.data.ptr = channel;
-    event.events = channel->getInterestedEvents();
-    
+    event.events   = channel->getInterestedEvents();
+
     int fd = channel->getFd();
     if (channels_.find(fd) == channels_.end()) {
         channels_[fd] = channel;
         epoll_ctl(epollfd_, EPOLL_CTL_ADD, fd, &event);
-    }else {
+    } else {
         epoll_ctl(epollfd_, EPOLL_CTL_MOD, fd, &event);
     }
 }
 
-void EpollPoller::removeChannel(Channel *channel) {
+void EpollPoller::removeChannel(Channel* channel) {
     if (!channel) {
         return;
     }

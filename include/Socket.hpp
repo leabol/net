@@ -2,27 +2,27 @@
 
 #include <string_view>
 
-namespace Server
-{
-class InetAddress;   // 前置声明，避免不必要的编译依赖
+namespace Server {
 
-//通过socket()只能得到一个半成品的socket, 还需要bind()才具有使用功能,
-// 因此不把地址作为socket的成员变量
-class Socket{
-public:
+class InetAddress;  // 前置声明，避免不必要的编译依赖
+
+// 通过socket()只能得到一个半成品的socket, 还需要bind()才具有使用功能,
+//  因此不把地址作为socket的成员变量
+class Socket {
+  public:
     explicit Socket(int socketfd);
     explicit Socket();
     ~Socket();
 
     // Non-copyable
-    Socket(const Socket&) = delete;
+    Socket(const Socket&)            = delete;
     Socket& operator=(const Socket&) = delete;
 
     // Movable
     Socket(Socket&& other) noexcept : socketfd_(other.socketfd_) {
         other.socketfd_ = -1;
     }
-    Socket& operator=(Socket&& other) noexcept;   
+    Socket& operator=(Socket&& other) noexcept;
 
     void bindAddr(const InetAddress& addr);
 
@@ -48,17 +48,20 @@ public:
     // 注意：探测间隔/重试次数通常需要通过 TCP 层 sysctl 或 TCP_KEEP* 选项进一步配置。
     void setKeepAlive(bool on);
 
-    //for client
+    // for client
     void connect(const InetAddress& serveraddr);
     // 便捷重载：内部构造 InetAddress
     void connect(std::string_view host, std::string_view port);
-    
+
     // 便捷重载：服务端绑定（host,port）或仅端口（绑定到任意地址）
     void bindAddr(std::string_view host, std::string_view port);
-    void bindAddr(std::string_view port); // 仅端口表示任意地址
-    
-    int fd() const noexcept { return socketfd_; }
-private:
+    void bindAddr(std::string_view port);  // 仅端口表示任意地址
+
+    int fd() const noexcept {
+        return socketfd_;
+    }
+
+  private:
     int socketfd_{-1};
 };
 // 常见 errno 含义：
@@ -69,4 +72,4 @@ private:
 // - ECONNREFUSED：连接被拒绝
 // - ETIMEDOUT：操作超时
 // - ENETUNREACH/EHOSTUNREACH：网络/主机不可达
-}// namespace Server
+}  // namespace Server

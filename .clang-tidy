@@ -1,0 +1,24 @@
+Checks: >
+  bugprone-*,
+  performance-*,
+  readability-*,
+  modernize-*,
+  portability-*,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-length  # 彻底禁用长度检查（本行已排除）
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '^(include|src)/.*'
+FormatStyle: none
+
+CheckOptions:
+  - key:             modernize-loop-convert.MinConfidence
+    value:           reasonable
+  # 放宽可选：如果你的 clang-tidy 版本忽略上面的禁用，可降低最小长度
+  - key:             readability-identifier-length.MinimumParameterNameLength
+    value:           1
+  - key:             readability-identifier-length.MinimumVariableNameLength
+    value:           1
+  - key:             readability-identifier-length.MinimumMemberNameLength
+    value:           1
+

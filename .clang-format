@@ -1,0 +1,33 @@
+BasedOnStyle: Google
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+
+# Pointers and alignment
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# Braces and breaking
+AllowShortFunctionsOnASingleLine: Empty
+BreakConstructorInitializers: BeforeComma
+Cpp11BracedListStyle: true
+
+# Spacing and wrapping
+BinPackParameters: false
+BinPackArguments: false
+SpaceAfterCStyleCast: true
+SpacesInCStyleCastParentheses: false
+ReflowComments: true
+
+# Namespaces
+NamespaceIndentation: None
+
+# Others
+AccessModifierOffset: -2
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true

@@ -2,19 +2,22 @@
 #include <memory>
 #include <unordered_map>
 
+namespace Server {
+
 class Channel;
 class EpollPoller;
 
 class EventLoop {
-public:
+  public:
     EventLoop();
     ~EventLoop();
     void loop();
     void addChannel(std::shared_ptr<Channel> channel);
-    void updateChannel(Channel *channel);
+    void updateChannel(Channel* channel);
     void removeChannel(int fd);
-private:
-    std::unique_ptr<EpollPoller> poller_;
+
+  private:
+    std::unique_ptr<EpollPoller>                      poller_;
     std::unordered_map<int, std::shared_ptr<Channel>> channels_;
 };
-
+}  // namespace Server
