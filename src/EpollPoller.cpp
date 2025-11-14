@@ -31,7 +31,7 @@ std::vector<Channel*> EpollPoller::poll(int timeout) {
     std::vector<Channel*> activeChannel;
     activeChannel.reserve(static_cast<size_t>(numEvents));
     for (int i = 0; i < numEvents; ++i) {
-        Channel* channel = static_cast<Channel*>(events_[i].data.ptr);
+        auto* channel = static_cast<Channel*>(events_[i].data.ptr);
         channel->setReadyEvents(events_[i].events);
         activeChannel.push_back(channel);
     }
@@ -54,7 +54,7 @@ void EpollPoller::addChannel(Channel* channel) {
 }
 
 void EpollPoller::removeChannel(Channel* channel) {
-    if (!channel) {
+    if (channel == nullptr) {
         return;
     }
     int fd = channel->getFd();

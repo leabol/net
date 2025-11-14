@@ -11,7 +11,7 @@ class EventLoop {
   public:
     EventLoop();
     ~EventLoop();
-    void loop();
+    void loop(int timeout);
     void addChannel(std::shared_ptr<Channel> channel);
     void updateChannel(Channel* channel);
     void removeChannel(int fd);

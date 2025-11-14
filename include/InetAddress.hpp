@@ -26,7 +26,7 @@ class InetAddress {
         resolve();  // 开始解析并获取地址信息
     };
     // for server to listen port
-    explicit InetAddress(std::string port) : hostname_(""), port_(std::move(port)) {
+    explicit InetAddress(std::string port) : port_(std::move(port)) {
         hints_.ai_flags =
             AI_PASSIVE | AI_ADDRCONFIG;  // 服务端：绑定所有本地地址；仅返回本机可达协议族
         // TODO: 可改进 - 纯数字端口时加入 AI_NUMERICSERV，跳过服务名解析以提升性能。
@@ -36,7 +36,9 @@ class InetAddress {
         resolve();
     };
     ~InetAddress() noexcept {
-        if (res_) freeaddrinfo(res_);
+        if (res_ != nullptr) {
+            freeaddrinfo(res_);
+        }
         // NOTE: 若未来希望支持拷贝语义，需要实现深拷贝以避免双重释放。
     }
 
@@ -55,7 +57,9 @@ class InetAddress {
     }
     InetAddress& operator=(InetAddress&& other) noexcept {
         if (this != &other) {
-            if (res_) freeaddrinfo(res_);
+            if (res_ != nullptr) {
+                freeaddrinfo(res_);
+            }
             hostname_  = std::move(other.hostname_);
             port_      = std::move(other.port_);
             hints_     = other.hints_;
@@ -65,8 +69,8 @@ class InetAddress {
         return *this;
     }
 
-    const struct addrinfo* getAddrinfoList() const {
-        if (!res_) {
+    [[nodiscard]] const struct addrinfo* getAddrinfoList() const {
+        if (res_ == nullptr) {
             throw std::runtime_error("resolve() must be called first");
         }
         return res_;
@@ -75,14 +79,14 @@ class InetAddress {
     // 供调用方枚举候选地址。
 
     // 便捷：返回首个地址（常用于 connect/bind）
-    const struct sockaddr* addr() const {
-        if (!res_) {
+    [[nodiscard]] const struct sockaddr* addr() const {
+        if (res_ == nullptr) {
             throw std::runtime_error("resolve() must be called first");
         }
         return res_->ai_addr;
     }
-    socklen_t addrlen() const {
-        if (!res_) {
+    [[nodiscard]] socklen_t addrlen() const {
+        if (res_ == nullptr) {
             throw std::runtime_error("resolve() must be called first");
         }
         return static_cast<socklen_t>(res_->ai_addrlen);
@@ -91,7 +95,7 @@ class InetAddress {
     // TODO: 可改进 - 提供非抛异常的接口（返回错误码/expected），便于在库场景减少异常开销。
   private:
     void resolve() {
-        if (res_) {  // 再解析前释放旧结果，避免泄漏
+        if (res_ != nullptr) {  // 再解析前释放旧结果，避免泄漏
             freeaddrinfo(res_);
             res_ = nullptr;
         }
@@ -105,7 +109,6 @@ class InetAddress {
         // TODO: 可改进 - 考虑负缓存与重试策略（网络短暂错误时）。
     }
 
-  private:
     std::string     hostname_;
     std::string     port_;
     struct addrinfo hints_ {};  // 地址解析限制条件（已零初始化）

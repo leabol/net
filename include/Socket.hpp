@@ -24,40 +24,40 @@ class Socket {
     }
     Socket& operator=(Socket&& other) noexcept;
 
-    void bindAddr(const InetAddress& addr);
+    void bindAddr(const InetAddress& addr) const;
 
-    void listen(int n);
+    void listen(int n) const;
 
     // 接受新连接，返回新连接 fd；通过 peeraddr 返回对端地址（数字形式）。
-    int accept(InetAddress& peeraddr);
+    int accept(InetAddress& peeraddr) const;
 
     // 将套接字设为非阻塞（O_NONBLOCK）
-    void setNonblock(bool on);
+    void setNonblock(bool on) const;
 
     // 开关 TCP_NODELAY（禁用/启用 Nagle 算法）。开启通常降低延迟但可能增加小包数量。
-    void setTcpNoDelay(bool on);
+    void setTcpNoDelay(bool on) const;
 
     // 开关 SO_REUSEADDR：允许 TIME_WAIT 状态下快速复用本地地址端口（常用于服务端重启）。
-    void setReuseAddr(bool on);
+    void setReuseAddr(bool on) const;
 
     // 开关 SO_REUSEPORT：允许多个进程/线程绑定同一 <ip,port>（用于多核负载均衡）。
     // 某些平台/内核版本不支持，可能返回 ENOPROTOOPT/EINVAL。
-    void setReusePort(bool on);
+    void setReusePort(bool on) const;
 
     // 开关 SO_KEEPALIVE：周期性探测对端是否存活，检测断链。
     // 注意：探测间隔/重试次数通常需要通过 TCP 层 sysctl 或 TCP_KEEP* 选项进一步配置。
-    void setKeepAlive(bool on);
+    void setKeepAlive(bool on) const;
 
     // for client
-    void connect(const InetAddress& serveraddr);
+    void connect(const InetAddress& serveraddr) const;
     // 便捷重载：内部构造 InetAddress
-    void connect(std::string_view host, std::string_view port);
+    void connect(std::string_view host, std::string_view port) const;
 
     // 便捷重载：服务端绑定（host,port）或仅端口（绑定到任意地址）
-    void bindAddr(std::string_view host, std::string_view port);
-    void bindAddr(std::string_view port);  // 仅端口表示任意地址
+    void bindAddr(std::string_view host, std::string_view port) const;
+    void bindAddr(std::string_view port) const;  // 仅端口表示任意地址
 
-    int fd() const noexcept {
+    [[nodiscard]] int fd() const noexcept {
         return socketfd_;
     }
 

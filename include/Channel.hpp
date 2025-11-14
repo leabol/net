@@ -20,7 +20,7 @@ class Channel {
     void setInterestedEvents(uint32_t nevents) {
         events_ = nevents;
     }
-    uint32_t getInterestedEvents() const {
+    [[nodiscard]] uint32_t getInterestedEvents() const {
         return events_;
     }
 
@@ -28,16 +28,16 @@ class Channel {
         revents_ = revents;
     }
     void handleEvent() {
-        if ((revents_ & EPOLLIN) && readCallback_) {
+        if (((revents_ & EPOLLIN) != 0) && readCallback_) {
             readCallback_();
         }
-        if ((revents_ & EPOLLOUT) && writeCallback_) {
+        if (((revents_ & EPOLLOUT) != 0) && writeCallback_) {
             writeCallback_();
         }
         // add more error msg
     }
 
-    int getFd() const {
+    [[nodiscard]] int getFd() const {
         return fd_;
     }
 

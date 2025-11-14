@@ -9,17 +9,17 @@ EventLoop::EventLoop() : poller_(std::make_unique<EpollPoller>()) {}
 
 EventLoop::~EventLoop() = default;
 
-void EventLoop::loop() {
+void EventLoop::loop(int timeout) {
     while (true) {
-        std::vector<Channel*> activeChannels = poller_->poll(1000);
-        for (auto channel : activeChannels) {
+        std::vector<Channel*> activeChannels = poller_->poll(timeout);
+        for (auto* channel : activeChannels) {
             channel->handleEvent();
         }
     }
 }
 
 void EventLoop::addChannel(std::shared_ptr<Channel> channel) {
-    if (!channel) {
+    if (channel == nullptr) {
         return;
     }
     int fd        = channel->getFd();
@@ -28,7 +28,7 @@ void EventLoop::addChannel(std::shared_ptr<Channel> channel) {
 }
 
 void EventLoop::updateChannel(Channel* channel) {
-    if (!channel) {
+    if (channel == nullptr) {
         return;
     }
     poller_->addChannel(channel);

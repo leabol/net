@@ -39,7 +39,7 @@ Socket& Socket::operator=(Socket&& other) noexcept {
     return *this;
 }
 
-void Socket::bindAddr(const InetAddress& addr) {
+void Socket::bindAddr(const InetAddress& addr) const {
     const struct addrinfo* addrlist = addr.getAddrinfoList();
     const struct addrinfo* rp;
 
@@ -58,13 +58,13 @@ void Socket::bindAddr(const InetAddress& addr) {
     }
 }
 
-void Socket::listen(int n) {
+void Socket::listen(int n) const {
     if (::listen(socketfd_, n) == -1) {
         throw std::runtime_error("listen failed: " + std::string(strerror(errno)));
     }
 }
 
-int Socket::accept(InetAddress& peeraddr) {
+int Socket::accept(InetAddress& peeraddr) const {
     struct sockaddr_storage ss;
     socklen_t               len = sizeof(ss);
 
@@ -97,7 +97,7 @@ int Socket::accept(InetAddress& peeraddr) {
     return connfd;
 }
 
-void Socket::setNonblock(bool on) {
+void Socket::setNonblock(bool on) const {
     int flags = ::fcntl(socketfd_, F_GETFL, 0);
     if (flags == -1) {
         throw std::runtime_error("fcntl(F_GETFL) failed: " + std::string(strerror(errno)));
@@ -109,14 +109,14 @@ void Socket::setNonblock(bool on) {
     }
 }
 
-void Socket::setTcpNoDelay(bool on) {
+void Socket::setTcpNoDelay(bool on) const {
     int val = on ? 1 : 0;
     if (::setsockopt(socketfd_, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val)) == -1) {
         throw std::runtime_error("setsockopt(TCP_NODELAY) failed: " + std::string(strerror(errno)));
     }
 }
 
-void Socket::setReuseAddr(bool on) {
+void Socket::setReuseAddr(bool on) const {
     int val = on ? 1 : 0;
     if (::setsockopt(socketfd_, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1) {
         throw std::runtime_error("setsockopt(SO_REUSEADDR) failed: " +
@@ -124,7 +124,7 @@ void Socket::setReuseAddr(bool on) {
     }
 }
 
-void Socket::setReusePort(bool on) {
+void Socket::setReusePort(bool on) const {
     int val = on ? 1 : 0;
     if (::setsockopt(socketfd_, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(val)) == -1) {
         if (errno == ENOPROTOOPT || errno == EINVAL) {
@@ -138,7 +138,7 @@ void Socket::setReusePort(bool on) {
     }
 }
 
-void Socket::setKeepAlive(bool on) {
+void Socket::setKeepAlive(bool on) const {
     int val = on ? 1 : 0;
     if (::setsockopt(socketfd_, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val)) == -1) {
         throw std::runtime_error("setsockopt(SO_KEEPALIVE) failed: " +
@@ -146,7 +146,7 @@ void Socket::setKeepAlive(bool on) {
     }
 }
 
-void Socket::connect(const InetAddress& serveraddr) {
+void Socket::connect(const InetAddress& serveraddr) const {
     const struct addrinfo* list = serveraddr.getAddrinfoList();
     const struct addrinfo* rp   = nullptr;
 
@@ -162,17 +162,17 @@ void Socket::connect(const InetAddress& serveraddr) {
     throw std::runtime_error(std::string("connect failed: ") + ::strerror(last_errno));
 }
 
-void Socket::connect(std::string_view host, std::string_view port) {
+void Socket::connect(std::string_view host, std::string_view port) const {
     InetAddress addr{std::string(host), std::string(port)};
     Socket::connect(static_cast<const InetAddress&>(addr));
 }
 
-void Socket::bindAddr(std::string_view host, std::string_view port) {
+void Socket::bindAddr(std::string_view host, std::string_view port) const {
     InetAddress addr{std::string(host), std::string(port)};
-    Socket::bindAddr(static_cast<const InetAddress&>(addr));
+    bindAddr(static_cast<const InetAddress&>(addr));
 }
 
-void Socket::bindAddr(std::string_view port) {
+void Socket::bindAddr(std::string_view port) const {
     InetAddress any{std::string(port)};
-    Socket::bindAddr(static_cast<const InetAddress&>(any));
+    bindAddr(static_cast<const InetAddress&>(any));
 }
