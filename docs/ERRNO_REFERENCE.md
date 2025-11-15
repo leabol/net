@@ -1,0 +1,26 @@
+# errno 参考速查（网络/IO 常见）
+
+- 非阻塞/中断：
+  - `EAGAIN`/`EWOULDBLOCK`：当前不可完成；非阻塞读写/accept 常见，稍后重试。
+  - `EINTR`：被信号中断，重试。
+  - `EINPROGRESS`：非阻塞 `connect` 进行中；等 `EPOLLOUT` 后用 `SO_ERROR` 判定。
+  - `EALREADY`：非阻塞 `connect` 已在进行中。
+- 连接：
+  - `ECONNABORTED`：accept 前被复位，服务端忽略继续。
+  - `ECONNRESET`：连接被复位。
+  - `ETIMEDOUT`：超时。
+  - `EPIPE`：向已关闭对端写。
+  - `ENOTCONN`：未连接套接字上的操作。
+- 绑定/监听：
+  - `EADDRINUSE`：地址被占用。
+  - `EADDRNOTAVAIL`：地址不可用。
+  - `ENOBUFS`/`ENOMEM`：资源不足。
+  - `EACCES`/`EPERM`：权限不足。
+- epoll：
+  - `EEXIST`：ADD 时已存在（回退 MOD）。
+  - `ENOENT`：MOD/DEL 时不存在（回退 ADD 或忽略）。
+  - `EINVAL`：参数非法/状态错误（可能 fd 已关闭）。
+  - `EBADF`：非法 fd。
+- 其他：
+  - `ENOPROTOOPT`：不支持的套接字选项（如 `SO_REUSEPORT` 在旧内核）。
+  - `ENOSYS`：未实现。
