@@ -4,17 +4,20 @@
 #include <cstring>
 
 #include "../include/Channel.hpp"
+#include "../include/Log.hpp"
 
 using namespace Server;
 
 EpollPoller::EpollPoller() : epollfd_(epoll_create1(EPOLL_CLOEXEC)), events_(kInitEventListSize) {
     if (epollfd_ < 0) {
-        // handle error
+        LOG_CRITICAL("epoll_create1 failed: {}", strerror(errno));
     }
 }
 
 EpollPoller::~EpollPoller() {
-    close(epollfd_);
+    if (epollfd_ >= 0) {
+        close(epollfd_);
+    }
 }
 
 std::vector<Channel*> EpollPoller::poll(int timeout) {
@@ -44,12 +47,51 @@ void EpollPoller::updateChannel(Channel* channel) {
     event.data.ptr = channel;
     event.events   = channel->getInterestedEvents();
 
-    int fd = channel->getFd();
-    if (channels_.find(fd) == channels_.end()) {
-        channels_[fd] = channel;
-        epoll_ctl(epollfd_, EPOLL_CTL_ADD, fd, &event);
+    int  fd = channel->getFd();
+    auto it = channels_.find(fd);
+
+    // 禁用：events==0 → DEL
+    if (event.events == 0) {
+        if (channel->isAdded()) {
+            if (epoll_ctl(epollfd_, EPOLL_CTL_DEL, fd, nullptr) == -1 && errno != ENOENT) {
+                LOG_ERROR("epoll_ctl DEL fd={} failed: {}", fd, strerror(errno));
+            }
+            channel->setAdded(false);
+        }
+        if (it != channels_.end()) {
+            channels_.erase(it);
+        }
+        return;
+    }
+
+    // 优先 MOD：若不存在则回退 ADD
+    if (epoll_ctl(epollfd_, EPOLL_CTL_MOD, fd, &event) == -1) {
+        if (errno == ENOENT || !channel->isAdded() || it == channels_.end()) {
+            if (epoll_ctl(epollfd_, EPOLL_CTL_ADD, fd, &event) == -1) {
+                if (errno == EEXIST) {
+                    // 内核已存在：再尝试 MOD 一次
+                    if (epoll_ctl(epollfd_, EPOLL_CTL_MOD, fd, &event) == -1) {
+                        LOG_ERROR(
+                            "epoll_ctl MOD after EEXIST fd={} failed: {}", fd, strerror(errno));
+                        return;
+                    }
+                } else {
+                    LOG_ERROR("epoll_ctl ADD fd={} failed: {}", fd, strerror(errno));
+                    return;
+                }
+            }
+            channel->setAdded(true);
+            channels_[fd] = channel;
+        } else {
+            LOG_ERROR("epoll_ctl MOD fd={} failed: {}", fd, strerror(errno));
+            return;
+        }
     } else {
-        epoll_ctl(epollfd_, EPOLL_CTL_MOD, fd, &event);
+        // MOD 成功，确保映射存在
+        if (it == channels_.end()) {
+            channels_[fd] = channel;
+        }
+        channel->setAdded(true);
     }
 }
 
@@ -58,6 +100,9 @@ void EpollPoller::removeChannel(Channel* channel) {
         return;
     }
     int fd = channel->getFd();
-    epoll_ctl(epollfd_, EPOLL_CTL_DEL, fd, nullptr);
+    if (epoll_ctl(epollfd_, EPOLL_CTL_DEL, fd, nullptr) == -1 && errno != ENOENT) {
+        LOG_ERROR("epoll_ctl DEL fd={} failed: {}", fd, strerror(errno));
+    }
+    channel->setAdded(false);
     channels_.erase(fd);
 }
