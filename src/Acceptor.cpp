@@ -1,0 +1,63 @@
+#include "../include/Acceptor.hpp"
+
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include <cerrno>
+#include <cstring>
+
+#include "../include/Channel.hpp"
+#include "../include/InetAddress.hpp"
+#include "../include/Log.hpp"
+#include "../include/Socket.hpp"
+
+namespace Server {
+
+Acceptor::Acceptor(EventLoop* loop, const InetAddress& listenAddr)
+    : loop_(loop), acceptChannel_(loop, acceptSocket_.fd()) {
+    acceptSocket_.setNonblock();
+    acceptSocket_.setReuseAddr();
+    acceptSocket_.setReusePort();
+    acceptSocket_.bindAddr(listenAddr);
+    acceptChannel_.setReadCallback([this]() { this->handleRead(); });
+}
+
+Acceptor::~Acceptor() {
+    acceptChannel_.disableAll();
+    acceptChannel_.remove();
+};
+
+void Acceptor::listen(int backlog) {
+    acceptSocket_.listen(backlog);
+    acceptChannel_.enableReading();
+}
+
+void Acceptor::handleRead() {
+    for (;;) {
+        InetAddress peeraddr;
+        const int   connectFd = acceptSocket_.accept(peeraddr);
+        if (connectFd >= 0) {
+            if (connectionCallback_) {
+                connectionCallback_(connectFd, peeraddr);
+            } else {
+                LOG_WARN("connectionCallback_ is not set, closing connectFd{}", connectFd);
+                ::close(connectFd);
+            }
+            continue;
+        }
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            break;  // 本轮无更多连接
+        }
+        if (errno == EINTR) {
+            continue;  // 继续重试
+        }
+        if (errno == ECONNABORTED) {
+            // 三次握手已完成但连接在 accept 前被对端复位，跳过继续
+            LOG_WARN("accept ECONNABORTED, continue");
+            continue;
+        }
+        LOG_ERROR("accept failed errno={} msg={}", errno, strerror(errno));
+        break;
+    }
+}
+}  // namespace Server
