@@ -37,24 +37,45 @@ if(CLANG_FORMAT_EXE)
 		COMMENT "Formatting C/C++ sources with clang-format")
 endif()
 
-if(CLANG_TIDY_EXE)
-	add_custom_target(tidy
-		COMMAND ${CLANG_TIDY_EXE} -p ${CMAKE_BINARY_DIR} ${ALL_CXX_SOURCES}
-		COMMENT "Running clang-tidy on sources")
-endif()
+# tidy 目标在定义完 net_core 之后再创建
 
-add_executable(socket_server_demo
-	test/socket_server_demo.cpp
+# Core static library
+add_library(net_core STATIC
 	src/Socket.cpp
 	src/Log.cpp
+	src/Channel.cpp
+	src/EventLoop.cpp
+	src/EpollPoller.cpp
+	src/Acceptor.cpp
 )
-target_include_directories(socket_server_demo PRIVATE include)
+target_include_directories(net_core PUBLIC include)
+target_compile_options(net_core PRIVATE -Wall -Wextra -pedantic)
+
+if(CLANG_TIDY_EXE)
+	# 仅对核心库源码运行 tidy，排除 old/ 与 demo/test 以减少干扰
+	get_target_property(NET_CORE_SRCS net_core SOURCES)
+	add_custom_target(tidy
+		COMMAND ${CLANG_TIDY_EXE} -p ${CMAKE_BINARY_DIR} ${NET_CORE_SRCS}
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		COMMENT "Running clang-tidy on net_core sources")
+endif()
+
+# Demos link against core
+add_executable(socket_server_demo
+	test/socket_server_demo.cpp
+)
+target_link_libraries(socket_server_demo PRIVATE net_core)
 target_compile_options(socket_server_demo PRIVATE -Wall -Wextra -pedantic)
 
 add_executable(socket_client_demo
 	test/socket_client_demo.cpp
-	src/Socket.cpp
-	src/Log.cpp
 )
-target_include_directories(socket_client_demo PRIVATE include)
+target_link_libraries(socket_client_demo PRIVATE net_core)
 target_compile_options(socket_client_demo PRIVATE -Wall -Wextra -pedantic)
+
+# Minimal build/link test
+add_executable(core_build_test
+	test/core_build_test.cpp
+)
+target_link_libraries(core_build_test PRIVATE net_core)
+target_compile_options(core_build_test PRIVATE -Wall -Wextra -pedantic)
