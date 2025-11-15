@@ -58,8 +58,8 @@ void Socket::bindAddr(const InetAddress& addr) const {
     }
 }
 
-void Socket::listen(int n) const {
-    if (::listen(socketfd_, n) == -1) {
+void Socket::listen(int backlog) const {
+    if (::listen(socketfd_, backlog) == -1) {
         throw std::runtime_error("listen failed: " + std::string(strerror(errno)));
     }
 }
@@ -72,27 +72,16 @@ int Socket::accept(InetAddress& peeraddr) const {
         ::accept4(socketfd_, reinterpret_cast<sockaddr*>(&ss), &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
 
     if (connfd == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK ||
-            errno == EINTR) {  // - EAGAIN/EWOULDBLOCK：非阻塞监听套接字上暂无新连接,
-                               // EINTR：被信号中断，可重试
-            throw std::runtime_error("accept: no pending connection or interrupted");
-        }
-        throw std::runtime_error("accept failed: " + std::string(strerror(errno)));
+        // 将常见的可恢复错误返回给调用方，由上层循环处理
+        // - EAGAIN/EWOULDBLOCK：非阻塞监听套接字暂无新连接
+        // - EINTR：被信号中断，可重试
+        // 其他错误也交由上层决定是否继续或记录日志
+        return -1;
     }
 
-    // 填充对端地址信息（数字形式）
-    char host[NI_MAXHOST] = {0};
-    char serv[NI_MAXSERV] = {0};
-    if (::getnameinfo(reinterpret_cast<sockaddr*>(&ss),
-                      len,
-                      host,
-                      sizeof(host),
-                      serv,
-                      sizeof(serv),
-                      NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
-        InetAddress tmp{std::string(host), std::string(serv)};
-        peeraddr = std::move(tmp);
-    }
+    // 直接用对端 sockaddr 构造，避免二次解析
+    InetAddress tmp{reinterpret_cast<sockaddr*>(&ss), len};
+    peeraddr = std::move(tmp);
 
     return connfd;
 }

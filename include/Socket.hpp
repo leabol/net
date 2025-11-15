@@ -26,27 +26,27 @@ class Socket {
 
     void bindAddr(const InetAddress& addr) const;
 
-    void listen(int n) const;
+    void listen(int backlog) const;
 
     // 接受新连接，返回新连接 fd；通过 peeraddr 返回对端地址（数字形式）。
     int accept(InetAddress& peeraddr) const;
 
     // 将套接字设为非阻塞（O_NONBLOCK）
-    void setNonblock(bool on) const;
+    void setNonblock(bool on = true) const;
 
     // 开关 TCP_NODELAY（禁用/启用 Nagle 算法）。开启通常降低延迟但可能增加小包数量。
-    void setTcpNoDelay(bool on) const;
+    void setTcpNoDelay(bool on = true) const;
 
     // 开关 SO_REUSEADDR：允许 TIME_WAIT 状态下快速复用本地地址端口（常用于服务端重启）。
-    void setReuseAddr(bool on) const;
+    void setReuseAddr(bool on = true) const;
 
     // 开关 SO_REUSEPORT：允许多个进程/线程绑定同一 <ip,port>（用于多核负载均衡）。
     // 某些平台/内核版本不支持，可能返回 ENOPROTOOPT/EINVAL。
-    void setReusePort(bool on) const;
+    void setReusePort(bool on = true) const;
 
     // 开关 SO_KEEPALIVE：周期性探测对端是否存活，检测断链。
     // 注意：探测间隔/重试次数通常需要通过 TCP 层 sysctl 或 TCP_KEEP* 选项进一步配置。
-    void setKeepAlive(bool on) const;
+    void setKeepAlive(bool on = true) const;
 
     // for client
     void connect(const InetAddress& serveraddr) const;
