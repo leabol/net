@@ -39,7 +39,7 @@ std::vector<Channel*> EpollPoller::poll(int timeout) {
     return activeChannel;
 }
 
-void EpollPoller::addChannel(Channel* channel) {
+void EpollPoller::updateChannel(Channel* channel) {
     epoll_event event;
     event.data.ptr = channel;
     event.events   = channel->getInterestedEvents();

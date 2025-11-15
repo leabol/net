@@ -24,18 +24,19 @@ void EventLoop::addChannel(std::shared_ptr<Channel> channel) {
     }
     int fd        = channel->getFd();
     channels_[fd] = std::move(channel);
-    poller_->addChannel(channels_[fd].get());
+    poller_->updateChannel(channels_[fd].get());
 }
 
 void EventLoop::updateChannel(Channel* channel) {
     if (channel == nullptr) {
         return;
     }
-    poller_->addChannel(channel);
+    poller_->updateChannel(channel);
 }
 
-void EventLoop::removeChannel(int fd) {
-    auto it = channels_.find(fd);
+void EventLoop::removeChannel(Channel* channel) {
+    const int fd = channel->getFd();
+    auto      it = channels_.find(fd);
     if (it == channels_.end()) {
         return;
     }
