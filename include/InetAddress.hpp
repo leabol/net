@@ -3,6 +3,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 
+#include <cstring>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -12,6 +13,16 @@ namespace Server {
 
 class InetAddress {
   public:
+    explicit InetAddress() = default;
+    // 直接从已获得的套接字地址构造（例如 accept/getpeername 结果）。
+    // 不进行名称解析，后续 addr()/addrlen() 直接返回该地址。
+    InetAddress(const struct sockaddr* sa, socklen_t len) {
+        if (sa == nullptr || len == 0 || len > sizeof(storage_)) {
+            throw std::invalid_argument("InetAddress: invalid sockaddr or length");
+        }
+        std::memcpy(&storage_, sa, len);
+        storage_len_ = len;
+    }
     explicit InetAddress(std::string host, std::string port)
         : hostname_(std::move(host)), port_(std::move(port)) {
         // 设置返回addrinfo的限制条件
@@ -52,19 +63,30 @@ class InetAddress {
         : hostname_(std::move(other.hostname_))
         , port_(std::move(other.port_))
         , hints_(other.hints_)
-        , res_(other.res_) {
-        other.res_ = nullptr;
+        , res_(other.res_)
+        , storage_{}
+        , storage_len_(other.storage_len_) {
+        if (other.storage_len_ > 0) {
+            std::memcpy(&storage_, &other.storage_, other.storage_len_);
+        }
+        other.res_         = nullptr;
+        other.storage_len_ = 0;
     }
     InetAddress& operator=(InetAddress&& other) noexcept {
         if (this != &other) {
             if (res_ != nullptr) {
                 freeaddrinfo(res_);
             }
-            hostname_  = std::move(other.hostname_);
-            port_      = std::move(other.port_);
-            hints_     = other.hints_;
-            res_       = other.res_;
-            other.res_ = nullptr;
+            hostname_ = std::move(other.hostname_);
+            port_     = std::move(other.port_);
+            hints_    = other.hints_;
+            res_      = other.res_;
+            if (other.storage_len_ > 0) {
+                std::memcpy(&storage_, &other.storage_, other.storage_len_);
+            }
+            storage_len_       = other.storage_len_;
+            other.res_         = nullptr;
+            other.storage_len_ = 0;
         }
         return *this;
     }
@@ -80,16 +102,22 @@ class InetAddress {
 
     // 便捷：返回首个地址（常用于 connect/bind）
     [[nodiscard]] const struct sockaddr* addr() const {
-        if (res_ == nullptr) {
-            throw std::runtime_error("resolve() must be called first");
+        if (storage_len_ > 0) {
+            return reinterpret_cast<const struct sockaddr*>(&storage_);
         }
-        return res_->ai_addr;
+        if (res_ != nullptr) {
+            return res_->ai_addr;
+        }
+        throw std::runtime_error("InetAddress has no address");
     }
     [[nodiscard]] socklen_t addrlen() const {
-        if (res_ == nullptr) {
-            throw std::runtime_error("resolve() must be called first");
+        if (storage_len_ > 0) {
+            return storage_len_;
         }
-        return static_cast<socklen_t>(res_->ai_addrlen);
+        if (res_ != nullptr) {
+            return static_cast<socklen_t>(res_->ai_addrlen);
+        }
+        throw std::runtime_error("InetAddress has no address");
     }
     // TODO: 可改进 - 提供 toString()（例如 "ip:port"），便于日志与调试；需要 inet_ntop。
     // TODO: 可改进 - 提供非抛异常的接口（返回错误码/expected），便于在库场景减少异常开销。
@@ -99,6 +127,8 @@ class InetAddress {
             freeaddrinfo(res_);
             res_ = nullptr;
         }
+        // 若此前通过 sockaddr 直接构造，清除之，改用解析结果
+        storage_len_     = 0;
         const char* node = hostname_.empty() ? nullptr : hostname_.c_str();
         int         ret  = getaddrinfo(node, port_.c_str(), &hints_, &res_);
         if (ret != 0) {
@@ -115,5 +145,8 @@ class InetAddress {
     // TODO: 可改进 - 提供 setter 或构造参数允许调用方定制 hints（例如协议族/协议/flags）。
     struct addrinfo* res_{nullptr};  // 解析后的addrinfo链表, 一个主机名对应多个ip
     // TODO: 可改进 - 若端口是数字字符串，可在构造时校验范围 [1,65535] 并在需要时存储数值化端口。
+    // 若由原始 sockaddr 构造，则存储于此（无需 getaddrinfo），addr()/addrlen() 直接返回
+    mutable struct sockaddr_storage storage_ {};
+    mutable socklen_t               storage_len_{0};
 };
 }  // namespace Server
