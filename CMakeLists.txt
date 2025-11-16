@@ -47,6 +47,8 @@ add_library(net_core STATIC
 	src/EventLoop.cpp
 	src/EpollPoller.cpp
 	src/Acceptor.cpp
+	src/TcpServer.cpp
+	src/TcpConnection.cpp
 )
 target_include_directories(net_core PUBLIC include)
 target_compile_options(net_core PRIVATE -Wall -Wextra -pedantic)
