@@ -2,6 +2,7 @@
 #include <sys/epoll.h>
 
 #include <functional>
+#include <memory>
 
 namespace Server {
 class EventLoop;
@@ -66,6 +67,12 @@ class Channel {
 
     void remove();
 
+    // 绑定生命周期守卫：避免回调时对象已析构
+    void tie(const std::shared_ptr<void>& obj) {
+        tie_  = obj;
+        tied_ = true;
+    }
+
     // 由 Poller 管理：记录是否已注册到 epoll（避免重复 ADD）
     void setAdded(bool v) {
         added_ = v;
@@ -83,5 +90,9 @@ class Channel {
     EventCallback writeCallback_;
     EventCallback closeCallback_;
     bool          added_{false};
+
+    // 生命周期守卫
+    std::weak_ptr<void> tie_;
+    bool                tied_{false};
 };
 }  // namespace Server
