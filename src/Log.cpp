@@ -16,15 +16,24 @@ namespace Server {
 static std::shared_ptr<spdlog::logger> g_logger;
 static std::once_flag                  g_once;
 
+static std::filesystem::path resolveLogDir() {
+#ifdef SERVER_LOG_BASE
+    return std::filesystem::path(SERVER_LOG_BASE);
+#else
+    return std::filesystem::current_path() / "Log";
+#endif
+}
+
 static void init_once() {
     // 1) 确保目录存在（静默失败不抛异常）
     std::error_code ec;
-    std::filesystem::create_directories("Log", ec);
+    const auto      logDir = resolveLogDir();
+    std::filesystem::create_directories(logDir, ec);
 
     // 2) Sinks：彩色控制台 + 旋转文件（5MB x 3 份）
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto file_sink    = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-        "Log/server.log", 5 * 1024 * 1024, 3, true);
+        (logDir / "server.log").string(), 5 * 1024 * 1024, 3, true);
 
     // 3) 异步日志线程池（8K 队列，1 个后台线程）
     constexpr std::size_t queue_size     = 8192;

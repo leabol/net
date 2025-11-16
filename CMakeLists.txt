@@ -16,6 +16,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_program(CLANG_FORMAT_EXE NAMES clang-format)
 find_program(CLANG_TIDY_EXE NAMES clang-tidy)
 
+# Dependencies
+find_package(spdlog REQUIRED)
+find_package(fmt REQUIRED)
+
 file(GLOB_RECURSE ALL_CXX_HEADERS
 	${CMAKE_SOURCE_DIR}/include/*.h
 	${CMAKE_SOURCE_DIR}/include/*.hh
@@ -52,6 +56,15 @@ add_library(net_core STATIC
 )
 target_include_directories(net_core PUBLIC include)
 target_compile_options(net_core PRIVATE -Wall -Wextra -pedantic)
+target_link_libraries(net_core
+	PUBLIC
+		spdlog::spdlog
+		fmt::fmt
+)
+target_compile_definitions(net_core
+	PRIVATE
+		SERVER_LOG_BASE="${CMAKE_SOURCE_DIR}/Log"
+)
 
 if(CLANG_TIDY_EXE)
 	# 仅对核心库源码运行 tidy，排除 old/ 与 demo/test 以减少干扰
@@ -81,3 +94,9 @@ add_executable(core_build_test
 )
 target_link_libraries(core_build_test PRIVATE net_core)
 target_compile_options(core_build_test PRIVATE -Wall -Wextra -pedantic)
+
+add_executable(tcp_server_demo
+	test/tcp_server_demo.cpp
+)
+target_link_libraries(tcp_server_demo PRIVATE net_core)
+target_compile_options(tcp_server_demo PRIVATE -Wall -Wextra -pedantic)
