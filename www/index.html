@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTTP File Console</title>
+    <style>
+        :root {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #1f2937;
+            background-color: #f4f6fb;
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .panel {
+            background: #fff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .files {
+            margin-top: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 0.5rem 0.25rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        button {
+            border: none;
+            border-radius: 4px;
+            padding: 0.35rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-right: 0.25rem;
+        }
+
+        button.primary {
+            background-color: #2563eb;
+            color: #fff;
+        }
+
+        button.danger {
+            background-color: #dc2626;
+            color: #fff;
+        }
+
+        .status {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+
+            button {
+                margin-top: 0.25rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="panel">
+        <h1>HTTP 文件管理台</h1>
+        <p>上传/下载/删除服务器当前存储目录中的文件。</p>
+        <div>
+            <label for="fileInput">选择文件：</label>
+            <input id="fileInput" type="file" />
+            <button class="primary" id="uploadBtn">上传到服务器</button>
+            <div class="status" id="status"></div>
+        </div>
+        <div class="files">
+            <h2>当前文件</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>文件名</th>
+                        <th style="width: 220px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="fileBody">
+                    <tr>
+                        <td colspan="2">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const fileBody = document.getElementById('fileBody');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('fileInput');
+
+        const setStatus = (msg, isError = false) => {
+            statusEl.textContent = msg;
+            statusEl.style.color = isError ? '#dc2626' : '#475569';
+        };
+
+        async function refreshFiles() {
+            try {
+                const res = await fetch('/api/files');
+                if (!res.ok) {
+                    throw new Error('请求失败: ' + res.status);
+                }
+                const data = await res.json();
+                const files = data.files || [];
+                if (files.length === 0) {
+                    fileBody.innerHTML = '<tr><td colspan="2">暂无文件</td></tr>';
+                    return;
+                }
+                fileBody.innerHTML = '';
+                files.forEach((name) => {
+                    const row = document.createElement('tr');
+                    const titleTd = document.createElement('td');
+                    titleTd.textContent = name;
+                    const actionTd = document.createElement('td');
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = '下载';
+                    downloadBtn.className = 'primary';
+                    downloadBtn.onclick = () => {
+                        window.open(`/api/files/${encodeURIComponent(name)}`, '_blank');
+                    };
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '删除';
+                    deleteBtn.className = 'danger';
+                    deleteBtn.onclick = async () => {
+                        if (!confirm(`确认删除 ${name} ?`)) {
+                            return;
+                        }
+                        const resp = await fetch(`/api/files/${encodeURIComponent(name)}`, {
+                            method: 'DELETE',
+                        });
+                        if (!resp.ok) {
+                            setStatus('删除失败', true);
+                            return;
+                        }
+                        setStatus('删除成功');
+                        refreshFiles();
+                    };
+                    actionTd.appendChild(downloadBtn);
+                    actionTd.appendChild(deleteBtn);
+                    row.appendChild(titleTd);
+                    row.appendChild(actionTd);
+                    fileBody.appendChild(row);
+                });
+            } catch (err) {
+                fileBody.innerHTML = `<tr><td colspan="2">加载失败: ${err.message}</td></tr>`;
+            }
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) {
+                setStatus('请先选择文件', true);
+                return;
+            }
+            setStatus('上传中...');
+            try {
+                const resp = await fetch('/api/files', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/octet-stream',
+                        'X-Filename': encodeURIComponent(file.name),
+                    },
+                    body: file,
+                });
+                if (!resp.ok) {
+                    throw new Error('上传失败: ' + resp.status);
+                }
+                setStatus('上传成功');
+                fileInput.value = '';
+                refreshFiles();
+            } catch (err) {
+                setStatus(err.message, true);
+            }
+        });
+
+        refreshFiles();
+    </script>
+</body>
+
+</html>
