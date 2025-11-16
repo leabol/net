@@ -100,3 +100,19 @@ add_executable(tcp_server_demo
 )
 target_link_libraries(tcp_server_demo PRIVATE net_core)
 target_compile_options(tcp_server_demo PRIVATE -Wall -Wextra -pedantic)
+
+add_library(http_server STATIC
+	src/http/HttpServer.cpp
+	src/http/HttpRequestParser.cpp
+	src/http/HttpResponse.cpp
+	src/http/HttpUtils.cpp
+)
+target_include_directories(http_server PUBLIC include)
+target_link_libraries(http_server PUBLIC net_core)
+target_compile_options(http_server PRIVATE -Wall -Wextra -pedantic)
+
+add_executable(http_file_server
+	apps/http_file_server.cpp
+)
+target_link_libraries(http_file_server PRIVATE http_server)
+target_compile_options(http_file_server PRIVATE -Wall -Wextra -pedantic)
