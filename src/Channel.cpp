@@ -12,6 +12,13 @@ void Channel::update() {
 }
 
 void Channel::handleEvent() {
+    // 生命周期守卫：若绑定对象已析构，则不再分发事件
+    if (tied_) {
+        auto guard = tie_.lock();
+        if (!guard) {
+            return;
+        }
+    }
     const uint32_t rev = revents_;
 
     // 错误或挂断优先
