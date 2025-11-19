@@ -168,8 +168,7 @@ void TcpConnection::handleClose() {
     if (closeCallback_) {
         auto self = shared_from_this();
         closeCallback_(self);
-    }
-    if (connectionCallback_) {
+    }else if (connectionCallback_) {
         auto self = shared_from_this();
         connectionCallback_(self);  // 也可分离为 onConnected/onDisconnected
     }
