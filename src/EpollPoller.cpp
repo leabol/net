@@ -27,7 +27,7 @@ std::vector<Channel*> EpollPoller::poll(int timeout) {
         if (errno == EINTR) {
             return {};
         }
-        // TODO: add logging for unexpected epoll_wait failure.
+        LOG_ERROR("epoll_wait() is failed to call");
         return {};
     }
 

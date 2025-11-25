@@ -53,9 +53,10 @@ void HttpServer::onConnection(const Server::TcpServer::TcpConnectionPtr& conn) {
 
 void HttpServer::onMessage(const Server::TcpServer::TcpConnectionPtr& conn, std::string& data) {
     auto& ctx = contexts_[conn->fd()];
-    ctx.buffer.append(data);
+    ctx.buffer.append(data);  // 转载读取的字节流
 
     HttpRequest req;
+    // 一次可能会收到多个请求,需要循环多次解析
     while (parseHttpRequest(ctx, req)) {
         handleRequest(conn, req);
         req = HttpRequest{};
@@ -87,11 +88,13 @@ void HttpServer::handleGet(const Server::TcpServer::TcpConnectionPtr& conn,
         return;
     }
 
+    // 获取文件列表
     constexpr std::string_view prefix = "/api/files";
     if (cleanPath == prefix) {
         replyFileList(conn);
         return;
     }
+    // 获取具体文件
     if (cleanPath.rfind(prefix, 0) == 0 && cleanPath.size() > prefix.size() + 1) {
         const std::string name = cleanPath.substr(prefix.size() + 1);
         replyDownload(conn, name);
@@ -154,13 +157,13 @@ void HttpServer::replyStaticFile(const Server::TcpServer::TcpConnectionPtr& conn
 
     std::ifstream      ifs(target, std::ios::binary);
     std::ostringstream oss;
-    oss << ifs.rdbuf();
+    oss << ifs.rdbuf();  // 将文件的内容传递到oss
 
     HttpResponse resp;
     resp.setContentType("text/html; charset=utf-8");
     resp.setBody(oss.str());
     conn->send(resp.serialize(false));
-    conn->shutdown();
+    conn->shutdown();  // 发送完数据后会断开连接
 }
 
 void HttpServer::replyFileList(const Server::TcpServer::TcpConnectionPtr& conn) {

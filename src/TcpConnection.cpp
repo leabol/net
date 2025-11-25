@@ -47,6 +47,7 @@ void TcpConnection::shutdown() {
         setState(kDisconnecting);
         if (!channel_->isWriting()) {
             ::shutdown(fd(), SHUT_WR);
+            LOG_INFO("TcpConnection is shutdown by explicitly closed");
         }
     }
 }
@@ -103,7 +104,7 @@ void TcpConnection::handleRead() {
                 auto self = shared_from_this();
                 messageCallback_(self, msg);
             }
-            // 若继续可读(边缘触发需要循环)，继续循环；这里简单处理假设水平触发即可中断
+            // 判断是不是读完了
             if (n < static_cast<ssize_t>(sizeof(buf))) {
                 break;
             }
@@ -168,7 +169,7 @@ void TcpConnection::handleClose() {
     if (closeCallback_) {
         auto self = shared_from_this();
         closeCallback_(self);
-    }else if (connectionCallback_) {
+    } else if (connectionCallback_) {
         auto self = shared_from_this();
         connectionCallback_(self);  // 也可分离为 onConnected/onDisconnected
     }

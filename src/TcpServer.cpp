@@ -41,9 +41,14 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peer) {
     if (writeCompleteCallback_) {
         conn->setWriteCompleteCallback(writeCompleteCallback_);
     }
-    conn->setCloseCallback([this](const TcpConnectionPtr& c) { this->removeConnection(c); });
+    conn->setCloseCallback([this](const TcpConnectionPtr& c) {
+        if (connectionCallback_) {
+            connectionCallback_(c);  // reuse connection callback to report disconnect event
+        }
+        this->removeConnection(c);
+    });
     connections_.emplace(sockfd, conn);
-    conn->connectEstablished();
+    conn->connectEstablished();  // 让channel绑定自己,并通知链接建立
     LOG_INFO("new connection fd={} established (total={})", sockfd, connections_.size());
 }
 
