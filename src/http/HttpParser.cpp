@@ -1,11 +1,17 @@
 #include "../../include/http/HttpParser.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <string_view>
 
 namespace Http {
 
 HttpParser::FeedState HttpParser::feed(std::string_view data) {
+    //  防止一次请求结束后没有调用resetParser()
+    if (state_ == HttpParseState::REQUEST_COMPLETE) {
+        return FeedState::ERROR;
+    }
+
     recv_buff_.append(data.data(), data.size());
     if (state_ == HttpParseState::REQUEST_LINE_PENDING) {
         auto pos = recv_buff_.find("\r\n");
@@ -63,25 +69,8 @@ HttpParser::FeedState HttpParser::feed(std::string_view data) {
     }
 
     if (state_ == HttpParseState::HEADER_COMPLETE) {
-        if (request_.headers.find("transfer-encoding") != request_.headers.end()) {
-            return FeedState::ERROR;  // 不支持 chunked
-        }
-        auto content_length_it = request_.headers.find("content-Length");
-        if (content_length_it != request_.headers.end()) {
-            try {
-                content_length =
-                    static_cast<size_t>(std::stoul(request_.headers["content-Length"]));
-            } catch (...) {
-                return FeedState::ERROR;
-            }
-        } else {
-            //  无body
-            state_ = HttpParseState::REQUEST_COMPLETE;
-            return FeedState::COMPLETE;
-        }
-
-        auto connection_it = request_.headers.find("connection");
-
+        // 判断keep-alive
+        auto        connection_it = request_.headers.find("connection");
         std::string conn_value =
             (connection_it != request_.headers.end()) ? connection_it->second : "";
 
@@ -92,6 +81,23 @@ HttpParser::FeedState HttpParser::feed(std::string_view data) {
         } else {
             // HTTP/1.0 默认关闭，除非显式 keep-alive
             keep_alive = (conn_value == "keep-alive");
+        }
+
+        if (request_.headers.find("transfer-encoding") != request_.headers.end()) {
+            return FeedState::ERROR;  // 不支持 chunked
+        }
+        //  content-length
+        auto content_length_it = request_.headers.find("content-length");
+        if (content_length_it != request_.headers.end()) {
+            try {
+                content_length = static_cast<size_t>(std::stoul(content_length_it->second));
+            } catch (...) {
+                return FeedState::ERROR;
+            }
+        } else {
+            //  无body
+            state_ = HttpParseState::REQUEST_COMPLETE;
+            return FeedState::COMPLETE;
         }
 
         state_ = HttpParseState::BODY_CONTENT_LENGTH;
@@ -108,7 +114,17 @@ HttpParser::FeedState HttpParser::feed(std::string_view data) {
     }
     return FeedState::NEED_MORE;
 }
-const HttpRequest& HttpParser::getRequest() const {}
-void               HttpParser::resetParser() {}
-bool               HttpParser::isKeepAlive() const {}
+const HttpRequest& HttpParser::getRequest() const {
+    return request_;
+}
+void HttpParser::resetParser() {
+    state_         = HttpParseState::REQUEST_LINE_PENDING;
+    content_length = 0;
+    keep_alive     = false;
+    recv_buff_.clear();
+    request_ = HttpRequest{};
+}
+bool HttpParser::isKeepAlive() const {
+    return keep_alive;
+}
 }  // namespace Http
