@@ -13,10 +13,4 @@ struct HttpRequest {
     std::string                                  body;
 };
 
-struct ConnectionContext {
-    std::string buffer;
-};
-
-bool parseHttpRequest(ConnectionContext& ctx, HttpRequest& req);
-
 }  // namespace Http
