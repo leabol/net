@@ -1,11 +1,10 @@
+#include "http/HttpRequestParser.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <sstream>
 #include <string>
 #include <string_view>
-
-#include "http/HttpRequest.hpp"
-
 namespace {
 
 std::string trim(std::string_view input) {
