@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Log.hpp"
+#include "http/HttpParser.hpp"
 #include "http/HttpRequest.hpp"
 #include "http/HttpResponse.hpp"
 #include "http/HttpStatus.hpp"
@@ -52,14 +53,24 @@ void HttpServer::onConnection(const Server::TcpServer::TcpConnectionPtr& conn) {
 }
 
 void HttpServer::onMessage(const Server::TcpServer::TcpConnectionPtr& conn, std::string& data) {
-    auto& ctx = contexts_[conn->fd()];
-    ctx.buffer.append(data);  // 转载读取的字节流
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
 
-    HttpRequest req;
-    // 一次可能会收到多个请求,需要循环多次解析
-    while (parseHttpRequest(ctx, req)) {
-        handleRequest(conn, req);
-        req = HttpRequest{};
+    auto state = parser.feed(data);
+    while (true) {
+        if (state == HttpParser::FeedState::COMPLETE) {
+            const HttpRequest& req = parser.getRequest();
+            handleRequest(conn, req);
+            parser.resetParser(true);
+            state = parser.feed("");  // 继续尝试解析缓冲里的后续请求
+            continue;
+        }
+        if (state == HttpParser::FeedState::ERROR) {
+            LOG_WARN("{feed error}");
+            conn->shutdown();
+            break;
+        }
+        break;  // NEED_MORE
     }
 }
 void HttpServer::handleRequest(const Server::TcpServer::TcpConnectionPtr& conn,

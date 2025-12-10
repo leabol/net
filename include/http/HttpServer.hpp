@@ -8,8 +8,8 @@
 #include "EventLoop.hpp"
 #include "InetAddress.hpp"
 #include "TcpServer.hpp"
+#include "http/HttpParser.hpp"
 #include "http/HttpRequest.hpp"
-
 namespace Http {
 
 class HttpServer {
