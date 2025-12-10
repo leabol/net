@@ -108,7 +108,10 @@ void TcpConnection::handleRead() {
             if (n < static_cast<ssize_t>(sizeof(buf))) {
                 break;
             }
-        } else if (n == 0) {  // 对端关闭
+            continue;
+        }
+
+        if (n == 0) {  // 对端关闭
             handleClose();
             break;
         }
