@@ -9,6 +9,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Perf-friendly default: keep frame pointers and debug info with optimizations
+if(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
+add_compile_options(-fno-omit-frame-pointer)
+
 # Export compile_commands.json for tooling (clang-tidy/VS Code)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -55,7 +61,7 @@ add_library(net_core STATIC
 	src/TcpConnection.cpp
 )
 target_include_directories(net_core PUBLIC include)
-target_compile_options(net_core PRIVATE -Wall -Wextra -pedantic)
+target_compile_options(net_core PRIVATE -Wall -Wextra -pedantic -O2 -g)
 target_link_libraries(net_core
 	PUBLIC
 		spdlog::spdlog
@@ -109,10 +115,10 @@ add_library(http_server STATIC
 )
 target_include_directories(http_server PUBLIC include)
 target_link_libraries(http_server PUBLIC net_core)
-target_compile_options(http_server PRIVATE -Wall -Wextra -pedantic)
+target_compile_options(http_server PRIVATE -Wall -Wextra -pedantic -O2 -g)
 
 add_executable(http_file_server
 	apps/http_file_server.cpp
 )
 target_link_libraries(http_file_server PRIVATE http_server)
-target_compile_options(http_file_server PRIVATE -Wall -Wextra -pedantic)
+target_compile_options(http_file_server PRIVATE -Wall -Wextra -pedantic -O2 -g)
