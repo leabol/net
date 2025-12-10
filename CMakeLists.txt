@@ -103,9 +103,9 @@ target_compile_options(tcp_server_demo PRIVATE -Wall -Wextra -pedantic)
 
 add_library(http_server STATIC
 	src/http/HttpServer.cpp
-	src/http/HttpRequestParser.cpp
 	src/http/HttpResponse.cpp
 	src/http/HttpUtils.cpp
+	src/http/HttpParser.cpp
 )
 target_include_directories(http_server PUBLIC include)
 target_link_libraries(http_server PUBLIC net_core)
