@@ -17,3 +17,5 @@ compile_commands.json
 .cache
 Log
 storage
+src/old/*
+include/old/*
