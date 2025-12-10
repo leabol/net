@@ -7,11 +7,6 @@
 namespace Http {
 
 HttpParser::FeedState HttpParser::feed(std::string_view data) {
-    //  防止一次请求结束后没有调用resetParser()
-    if (state_ == HttpParseState::REQUEST_COMPLETE) {
-        return FeedState::ERROR;
-    }
-
     recv_buff_.append(data.data(), data.size());
     if (state_ == HttpParseState::REQUEST_LINE_PENDING) {
         auto pos = recv_buff_.find("\r\n");
@@ -117,12 +112,14 @@ HttpParser::FeedState HttpParser::feed(std::string_view data) {
 const HttpRequest& HttpParser::getRequest() const {
     return request_;
 }
-void HttpParser::resetParser() {
+void HttpParser::resetParser(bool keepBuffer) {
     state_         = HttpParseState::REQUEST_LINE_PENDING;
     content_length = 0;
     keep_alive     = false;
-    recv_buff_.clear();
-    request_ = HttpRequest{};
+    request_       = HttpRequest{};
+    if (!keepBuffer) {
+        recv_buff_.clear();
+    }
 }
 bool HttpParser::isKeepAlive() const {
     return keep_alive;

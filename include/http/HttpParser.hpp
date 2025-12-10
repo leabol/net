@@ -14,14 +14,13 @@ class HttpParser {
     };
     FeedState          feed(std::string_view data);
     const HttpRequest& getRequest() const;
-    void               resetParser();
+    void               resetParser(bool keepBuffer = true);
     bool               isKeepAlive() const;
 
   private:
     enum class HttpParseState {
         REQUEST_LINE_PENDING,  // 等待解析请求行
-        HEADER_NAME_PENDING,   // 等待解析请求头参数名
-        HEADER_VALUE_PENDING,  // 等待解析参数值
+        HEADER_PENDING,        // 等待解析请求头
         HEADER_COMPLETE,       // 请求头解析结束
         BODY_CONTENT_LENGTH,   // 解析body
         REQUEST_COMPLETE,      // 解析结束
@@ -38,4 +37,5 @@ class HttpParser {
 struct ConnectionContext {
     HttpParser parser;
 };
+
 }  // namespace Http
