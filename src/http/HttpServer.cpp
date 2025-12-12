@@ -279,7 +279,11 @@ void HttpServer::handleUpload(const Server::TcpServer::TcpConnectionPtr& conn,
     resp.setContentType("application/json; charset=utf-8");
     resp.setBody("{\"status\":\"ok\"}");
     conn->send(resp.serialize(false));
-    conn->shutdown();
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 void HttpServer::handleRemove(const Server::TcpServer::TcpConnectionPtr& conn,
