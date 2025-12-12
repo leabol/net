@@ -116,8 +116,12 @@ void HttpServer::handleGet(const Server::TcpServer::TcpConnectionPtr& conn,
     resp.setStatus(StatusCode::kNotFound, "Not Found");
     resp.setContentType("text/plain; charset=utf-8");
     resp.setBody("Resource not found\n");
-    conn->send(resp.serialize(false));
-    conn->shutdown();
+    conn->send(resp.serialize(true));
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 void HttpServer::handlePost(const Server::TcpServer::TcpConnectionPtr& conn,
@@ -131,8 +135,12 @@ void HttpServer::handlePost(const Server::TcpServer::TcpConnectionPtr& conn,
     resp.setStatus(StatusCode::kNotFound, "Not Found");
     resp.setContentType("text/plain; charset=utf-8");
     resp.setBody("POST target not found\n");
-    conn->send(resp.serialize(false));
-    conn->shutdown();
+    conn->send(resp.serialize(true));
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 void HttpServer::handleDelete(const Server::TcpServer::TcpConnectionPtr& conn,
@@ -148,8 +156,12 @@ void HttpServer::handleDelete(const Server::TcpServer::TcpConnectionPtr& conn,
     resp.setStatus(StatusCode::kNotFound, "Not Found");
     resp.setContentType("text/plain; charset=utf-8");
     resp.setBody("DELETE target not found\n");
-    conn->send(resp.serialize(false));
-    conn->shutdown();
+    conn->send(resp.serialize(true));
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 void HttpServer::replyStaticFile(const Server::TcpServer::TcpConnectionPtr& conn,
@@ -173,8 +185,12 @@ void HttpServer::replyStaticFile(const Server::TcpServer::TcpConnectionPtr& conn
     HttpResponse resp;
     resp.setContentType("text/html; charset=utf-8");
     resp.setBody(oss.str());
-    conn->send(resp.serialize(false));
-    conn->shutdown();  // 发送完数据后会断开连接
+    conn->send(resp.serialize(true));
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 void HttpServer::replyFileList(const Server::TcpServer::TcpConnectionPtr& conn) {
@@ -203,8 +219,12 @@ void HttpServer::replyFileList(const Server::TcpServer::TcpConnectionPtr& conn) 
     HttpResponse resp;
     resp.setContentType("application/json; charset=utf-8");
     resp.setBody(json.str());
-    conn->send(resp.serialize(false));
-    conn->shutdown();
+    conn->send(resp.serialize(true));
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 void HttpServer::replyDownload(const Server::TcpServer::TcpConnectionPtr& conn,
@@ -232,8 +252,12 @@ void HttpServer::replyDownload(const Server::TcpServer::TcpConnectionPtr& conn,
     resp.setContentType("application/octet-stream");
     resp.setHeader("Content-Disposition", "attachment; filename=\"" + safeName + "\"");
     resp.setBody(oss.str());
-    conn->send(resp.serialize(false));
-    conn->shutdown();
+    conn->send(resp.serialize(true));
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 void HttpServer::handleUpload(const Server::TcpServer::TcpConnectionPtr& conn,
@@ -278,7 +302,7 @@ void HttpServer::handleUpload(const Server::TcpServer::TcpConnectionPtr& conn,
     resp.setStatus(StatusCode::kCreated, "Created");
     resp.setContentType("application/json; charset=utf-8");
     resp.setBody("{\"status\":\"ok\"}");
-    conn->send(resp.serialize(false));
+    conn->send(resp.serialize(true));
     auto& ctx    = contexts_[conn->fd()];
     auto& parser = ctx.parser;
     if (!parser.isKeepAlive()) {
@@ -325,8 +349,12 @@ void HttpServer::handleRemove(const Server::TcpServer::TcpConnectionPtr& conn,
     HttpResponse resp;
     resp.setContentType("application/json; charset=utf-8");
     resp.setBody("{\"status\":\"deleted\"}");
-    conn->send(resp.serialize(false));
-    conn->shutdown();
+    conn->send(resp.serialize(true));
+    auto& ctx    = contexts_[conn->fd()];
+    auto& parser = ctx.parser;
+    if (!parser.isKeepAlive()) {
+        conn->shutdown();
+    }
 }
 
 }  // namespace Http
