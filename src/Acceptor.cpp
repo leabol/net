@@ -28,8 +28,10 @@ Acceptor::~Acceptor() {
 };
 
 void Acceptor::listen(int backlog) {
+    LOG_INFO("Acceptor starting to listen (backlog={})", backlog);
     acceptSocket_.listen(backlog);
     acceptChannel_.enableReading();
+    LOG_INFO("Acceptor listening on fd={}", acceptSocket_.fd());
 }
 
 void Acceptor::handleRead() {
@@ -37,6 +39,7 @@ void Acceptor::handleRead() {
         InetAddress peeraddr;
         const int   connectFd = acceptSocket_.accept(peeraddr);
         if (connectFd >= 0) {
+            LOG_DEBUG("Acceptor accepted new connection: fd={}", connectFd);
             if (connectionCallback_) {
                 connectionCallback_(connectFd, peeraddr);
             } else {

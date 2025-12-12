@@ -34,6 +34,7 @@ int TcpConnection::fd() const {
 
 void TcpConnection::connectEstablished() {
     setState(kConnected);
+    LOG_DEBUG("TcpConnection fd={} established", fd());
     auto self = shared_from_this();
     channel_->tie(self);  // 生命周期守卫
     channel_->enableReading();
@@ -47,30 +48,40 @@ void TcpConnection::shutdown() {
         setState(kDisconnecting);
         if (!channel_->isWriting()) {
             ::shutdown(fd(), SHUT_WR);
-            LOG_INFO("TcpConnection is shutdown by explicitly closed");
+            LOG_INFO("TcpConnection fd={} shutdown (write closed)", fd());
+        } else {
+            LOG_DEBUG("TcpConnection fd={} shutdown pending (has data to write)", fd());
         }
     }
 }
 
 void TcpConnection::forceClose() {
     if (state_ == kConnected || state_ == kDisconnecting) {
+        LOG_WARN("TcpConnection fd={} force close", fd());
         handleClose();
     }
 }
 
 void TcpConnection::send(const std::string& data) {
     if (state_ != kConnected) {
+        LOG_WARN("TcpConnection fd={} send failed: not connected", fd());
         return;
     }
+    LOG_TRACE("TcpConnection fd={} sending {} bytes", fd(), data.size());
     if (!channel_->isWriting() && outputBuffer_.empty()) {
         // 尝试直接写
         ssize_t n = ::send(fd(), data.data(), data.size(), 0);
         if (n >= 0) {
             size_t sent = static_cast<size_t>(n);
             if (sent < data.size()) {
+                LOG_TRACE("TcpConnection fd={} partial send: {}/{} bytes, buffering remaining",
+                          fd(),
+                          sent,
+                          data.size());
                 outputBuffer_.append(data.data() + sent, data.size() - sent);
                 channel_->enableWriting();
             } else {
+                LOG_TRACE("TcpConnection fd={} sent all {} bytes directly", fd(), sent);
                 if (writeCompleteCallback_) {
                     auto self = shared_from_this();
                     writeCompleteCallback_(self);
@@ -99,6 +110,7 @@ void TcpConnection::handleRead() {
     for (;;) {
         ssize_t n = ::recv(fd(), buf, sizeof(buf), 0);
         if (n > 0) {
+            LOG_TRACE("TcpConnection fd={} received {} bytes", fd(), n);
             std::string msg(buf, buf + n);
             if (messageCallback_) {
                 auto self = shared_from_this();
@@ -112,6 +124,7 @@ void TcpConnection::handleRead() {
         }
 
         if (n == 0) {  // 对端关闭
+            LOG_INFO("TcpConnection fd={} peer closed", fd());
             handleClose();
             break;
         }
@@ -132,11 +145,13 @@ void TcpConnection::handleWrite() {
     if (!channel_->isWriting()) {
         return;
     }
+    LOG_TRACE("TcpConnection fd={} writing buffered data ({} bytes)", fd(), outputBuffer_.size());
     while (!outputBuffer_.empty()) {
         ssize_t n = ::send(fd(), outputBuffer_.data(), outputBuffer_.size(), 0);
         if (n > 0) {
             outputBuffer_.erase(0, static_cast<size_t>(n));
             if (outputBuffer_.empty()) {
+                LOG_TRACE("TcpConnection fd={} write buffer emptied", fd());
                 channel_->disableWriting();
                 if (writeCompleteCallback_) {
                     auto self = shared_from_this();
@@ -166,6 +181,7 @@ void TcpConnection::handleClose() {
     if (state_ == kDisconnected) {
         return;
     }
+    LOG_INFO("TcpConnection fd={} closing", fd());
     setState(kDisconnected);
     channel_->disableAll();
     // channel_->remove(); // 可选：若需要主动从 Loop 移除
@@ -180,6 +196,7 @@ void TcpConnection::handleClose() {
 
 void TcpConnection::handleError() {
     // 发生严重错误时直接关闭
+    LOG_ERROR("TcpConnection fd={} encountered error, force closing", fd());
     forceClose();
 }
 
